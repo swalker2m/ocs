@@ -51,6 +51,9 @@ public final class MonitoredDirImpl implements MonitoredDir {
                 DirEvent evt = new DirEventImpl(MonitoredDirImpl.this, res);
                 _logScan(Level.FINER, "full", getDirLocation(), start, evt);
                 _fireEvent(evt);
+            } else {
+                long end = System.currentTimeMillis();
+                LOG.finer("Completed fruitless full scan of " + getDirLocation() + " in " + (end - start) + " ms");
             }
         }
     }
@@ -71,6 +74,9 @@ public final class MonitoredDirImpl implements MonitoredDir {
                 DirEvent evt = new DirEventImpl(MonitoredDirImpl.this, res);
                 _logScan(Level.FINER, "active", getDirLocation(), start, evt);
                 _fireEvent(evt);
+            } else {
+                long end = System.currentTimeMillis();
+                LOG.finer("Completed fruitless active set scan of " + getDirLocation() +  " in " + (end - start) + " ms");
             }
         }
     }

@@ -172,6 +172,8 @@ public final class RawCopier implements DirListener {
     }
 
     private void _copyRawFile(File f) {
+        final long startTime = System.currentTimeMillis();
+
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("Copying raw file '" + f.getName() + "' to working storage.");
         }
@@ -229,7 +231,8 @@ public final class RawCopier implements DirListener {
         _notifyWorkingStoreDir(destFile.getName());
 
         if (LOG.isLoggable(Level.FINE)) {
-            LOG.fine("Copied raw file '" + f.getName() + "' to working storage");
+            final long endTime = System.currentTimeMillis();
+            LOG.fine("Copied raw file '" + f.getName() + "' to working storage in " + (endTime - startTime) + " ms");
         }
     }
 
@@ -239,7 +242,7 @@ public final class RawCopier implements DirListener {
             srcMd5 = DatamanFileUtil.md5(src);
             DatamanFileUtil.copyFile(src, dest);
             destMd5 = DatamanFileUtil.md5(dest);
-            
+
         } catch (InterruptedException ex) {
             StringBuilder buf = new StringBuilder();
             buf.append('(').append(attempt);

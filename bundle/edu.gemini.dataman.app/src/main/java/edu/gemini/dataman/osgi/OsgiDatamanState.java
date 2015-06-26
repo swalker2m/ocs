@@ -70,6 +70,9 @@ final class OsgiDatamanState implements DatamanState {
 
     public synchronized void setRawLastModified(long time) {
         if (time < 0) throw new IllegalArgumentException("time = " + time);
+
+        LOG.fine("OsgiDatamanState.setRawLastModified(" + time + "): " + (new java.util.Date(time)));
+
         _props.setProperty(RAW_LAST_MODIFIED_PROP, String.valueOf(time));
         _updateState();
     }
