@@ -57,13 +57,13 @@ object Sample extends App {
   val steps = NonEmptyList(
     Step(Telescope(OffsetP.Zero,   40.0.arcsecs[OffsetQ]),  F2(F2.Filter.J, F2.Disperser.None)),
     Step(Telescope(OffsetP.Zero, (-40.0).arcsecs[OffsetQ]), F2(F2.Filter.J, F2.Disperser.None)),
-    Step(Telescope(OffsetP.Zero, (-40.0).arcsecs[OffsetQ]), F2(F2.Filter.J, F2.Disperser.None)),
+    Step(Telescope(OffsetP.Zero, (-40.0).arcsecs[OffsetQ]), F2(F2.Filter.H, F2.Disperser.None)),
     Step(Telescope(OffsetP.Zero,   40.0.arcsecs[OffsetQ]),  F2(F2.Filter.J, F2.Disperser.None))
   )
 
   val seq = Sequence.fromSteps(steps)
 
-  val steps2 = deserialize[Sequence[F2]](serialize(seq)).toSteps
+  val steps2 = deserialize[Sequence[Step[F2]]](serialize(seq)).toSteps
 //  val steps2 = seq.toSteps
 
   steps2.list.foreach(println)
