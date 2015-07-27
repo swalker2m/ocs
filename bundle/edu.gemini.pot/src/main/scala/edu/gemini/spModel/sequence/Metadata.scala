@@ -2,11 +2,11 @@ package edu.gemini.spModel.sequence
 
 import scalaz.NonEmptyList
 
-/**
- *
- */
-object Metadata {
+sealed trait Metadata {
+  def attrs: Metadata.Attributes
+}
 
+object Metadata {
   sealed trait Scope
   object Scope {
     case object Global     extends Scope
@@ -20,12 +20,9 @@ object Metadata {
   }
 
   case class Attributes(name: String, scope: Scope, access: Access, description: String = "")
-
-  sealed trait Descriptor {
-    def attrs: Attributes
-  }
-
-  case class EnumDescriptor[A](attrs: Attributes, values: NonEmptyList[A]) extends Descriptor
-  case class RangeDescriptor[A <: Ordered[A]](attrs: Attributes, min: A, max: A) extends Descriptor
-  case class ValueDescriptor[A](attrs: Attributes, default: A) extends Descriptor
 }
+
+import Metadata.Attributes
+
+case class EnumMetadata[A](attrs: Attributes, values: NonEmptyList[A]) extends Metadata
+case class ValueMetadata[A](attrs: Attributes, default: A) extends Metadata

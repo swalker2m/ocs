@@ -4,19 +4,42 @@ import scalaz._, Scalaz._
 
 sealed trait Step2[I] {
   def instrument: I
+  def stepType: Step2.Type
 }
 
-final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step2[I]
+object Step2 {
 
-object ScienceStep {
-  implicit def describeScienceStep[I: Describe]: Describe[ScienceStep[I]] =
-    Describe[(I, Telescope)].xmap[ScienceStep[I]](
-      t => ScienceStep(t._1, t._2),
-      s => (s.instrument, s.telescope)
+  // Step type is used in deserializing a sequence.  Given a specific step
+  // type we can use the corresponding Default type class instance to create a
+  // default value for that step type and then apply changes to it.
+  sealed trait Type
+  case object Bias    extends Type
+  case object Dark    extends Type
+  case object Gcal    extends Type
+  case object Science extends Type
+  case object Smart   extends Type
+
+  implicit def EqualType: Equal[Type] = Equal.equalA
+}
+
+final case class BiasStep[I](instrument: I) extends Step2[I] {
+  def stepType = Step2.Bias
+}
+
+object BiasStep {
+  implicit def describeBiasStep[I: Describe]: Describe[BiasStep[I]] =
+    Describe[I].xmap[BiasStep[I]](
+      i => BiasStep(i),
+      s => s.instrument
     )
+
+  implicit def defaultBiasStep[I](implicit ev: Default[I]): Default[BiasStep[I]] =
+    Default.forValue(BiasStep(ev.default))
 }
 
-final case class DarkStep[I](instrument: I) extends Step2[I]
+final case class DarkStep[I](instrument: I) extends Step2[I] {
+  def stepType = Step2.Dark
+}
 
 object DarkStep {
   implicit def describeDarkStep[I: Describe]: Describe[DarkStep[I]] =
@@ -25,30 +48,43 @@ object DarkStep {
       s => s.instrument
     )
 
-  val ds = DarkStep[F2](F2(F2.Filter.H, F2.Disperser.None))
+  implicit def defaultDarkStep[I](implicit ev: Default[I]): Default[DarkStep[I]] =
+    Default.forValue(DarkStep(ev.default))
 }
 
-final case class BiasStep[I](instrument: I) extends Step2[I]
-
-object BiasStep {
-  implicit def describeBiasStep[I: Describe]: Describe[BiasStep[I]] =
-    Describe[I].xmap[BiasStep[I]](
-      i => BiasStep(i),
-      s => s.instrument
-    )
+final case class GcalStep[I](instrument: I, gcal: GcalUnit) extends Step2[I] {
+  def stepType = Step2.Gcal
 }
-
-final case class GcalStep[I](instrument: I, gcal: Gcal) extends Step2[I]
 
 object GcalStep {
   implicit def describeGcalStep[I: Describe]: Describe[GcalStep[I]] =
-    Describe[(I, Gcal)].xmap[GcalStep[I]](
+    Describe[(I, GcalUnit)].xmap[GcalStep[I]](
       t => GcalStep(t._1, t._2),
       s => (s.instrument, s.gcal)
     )
+
+  implicit def defaultGcalStep[I](implicit ev: Default[I]): Default[GcalStep[I]] =
+    Default.forValue(GcalStep(ev.default, GcalUnit.DefaultGcal.default))
 }
 
-final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step2[I]
+final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step2[I] {
+  def stepType = Step2.Science
+}
+
+object ScienceStep {
+  implicit def describeScienceStep[I: Describe]: Describe[ScienceStep[I]] =
+    Describe[(I, Telescope)].xmap[ScienceStep[I]](
+      t => ScienceStep(t._1, t._2),
+      s => (s.instrument, s.telescope)
+    )
+
+  implicit def defaultScienceStep[I](implicit ev: Default[I]): Default[ScienceStep[I]] =
+    Default.forValue(ScienceStep(ev.default, Telescope.DefaultTelescope.default))
+}
+
+final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step2[I] {
+  def stepType = Step2.Smart
+}
 
 object SmartStep {
   sealed trait Type
@@ -74,4 +110,7 @@ object SmartStep {
         TypeProp :: implicitly[Describe[I]].props.map(_ compose inst)
     }
   }
+
+  implicit def defaultSmartStep[I](implicit ev: Default[I]): Default[SmartStep[I]] =
+    Default.forValue(SmartStep(ev.default, SmartStep.Type.Arc))
 }

@@ -39,4 +39,7 @@ object F2 {
 
   implicit val DescribeF2: Describe[F2] =
     Describe.forProps(FilterProp, DisperserProp)
+
+  implicit val DefaultF2: Default[F2] =
+    Default.forValue(F2(F2.Filter.J, F2.Disperser.None))
 }

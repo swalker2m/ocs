@@ -2,9 +2,9 @@ package edu.gemini.spModel.sequence
 
 import scalaz._, Scalaz._
 
-case class Gcal(lamp: Gcal.Lamp, shutter: Gcal.Shutter)
+case class GcalUnit(lamp: GcalUnit.Lamp, shutter: GcalUnit.Shutter)
 
-object Gcal {
+object GcalUnit {
   sealed trait Lamp
   object Lamp {
     case object IrHigh extends Lamp
@@ -12,10 +12,10 @@ object Gcal {
     case object Quartz extends Lamp
   }
 
-  object LampProp extends Prop[Gcal] {
+  object LampProp extends Prop[GcalUnit] {
     type B = Lamp
     val eq: Equal[Lamp]    = Equal.equalA
-    val lens: Gcal @> Lamp = Lens.lensu((a,b) => a.copy(lamp = b), _.lamp)
+    val lens: GcalUnit @> Lamp = Lens.lensu((a,b) => a.copy(lamp = b), _.lamp)
   }
 
   sealed trait Shutter
@@ -24,12 +24,15 @@ object Gcal {
     case object Closed extends Shutter
   }
 
-  object ShutterProp extends Prop[Gcal] {
+  object ShutterProp extends Prop[GcalUnit] {
     type B = Shutter
     val eq: Equal[Shutter]    = Equal.equalA
-    val lens: Gcal @> Shutter = Lens.lensu((a,b) => a.copy(shutter = b), _.shutter)
+    val lens: GcalUnit @> Shutter = Lens.lensu((a,b) => a.copy(shutter = b), _.shutter)
   }
 
-  implicit val DescribeGcal: Describe[Gcal] =
+  implicit val DescribeGcal: Describe[GcalUnit] =
     Describe.forProps(LampProp, ShutterProp)
+
+  implicit val DefaultGcal: Default[GcalUnit] =
+    Default.forValue(GcalUnit(GcalUnit.Lamp.IrHigh, GcalUnit.Shutter.Open))
 }
