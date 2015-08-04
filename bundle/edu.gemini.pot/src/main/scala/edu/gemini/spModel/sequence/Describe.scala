@@ -10,6 +10,9 @@ trait Describe[A] { self =>
   /** All properties of A. */
   def props: List[Prop[A]]
 
+  /** Default value for A. */
+  def default: A
+
   /** Compares two values for equality based upon their values of the
     * properties. */
   def equal(a0: A, a1: A): Boolean =
@@ -24,6 +27,8 @@ trait Describe[A] { self =>
   /** Invariant map. */
   def xmap[B](f: A => B, g: B => A): Describe[B] =
     new Describe[B] {
+      val default: B = f(self.default)
+
       val props = self.props.map(_.xmap(f, g))
 
       override def equal(b0: B, b1: B): Boolean =
@@ -39,13 +44,17 @@ object Describe {
   implicit def apply[A](implicit ev: Describe[A]): Describe[A] = ev
 
   /** Construct an instance from its properties. */
-  def forProps[A](ps: Prop[A]*): Describe[A] =
+  def forProps[A](defaultValue: A, ps: Prop[A]*): Describe[A] =
     new Describe[A] {
-      val props = ps.toList
+      val default = defaultValue
+      val props   = ps.toList
     }
 
   implicit def describe2[A, B](implicit da: Describe[A], db: Describe[B]): Describe[(A, B)] =
     new Describe[(A, B)] {
+      val default: (A, B) =
+        (da.default, db.default)
+
       val props: List[Prop[(A, B)]] =
         da.props.map(_ compose LensFamily.firstLens[A, B]) ++
         db.props.map(_ compose LensFamily.secondLens[A, B])

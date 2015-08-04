@@ -32,9 +32,6 @@ object BiasStep {
       i => BiasStep(i),
       s => s.instrument
     )
-
-  implicit def defaultBiasStep[I](implicit ev: Default[I]): Default[BiasStep[I]] =
-    Default.forValue(BiasStep(ev.default))
 }
 
 final case class DarkStep[I](instrument: I) extends Step2[I] {
@@ -47,9 +44,6 @@ object DarkStep {
       i => DarkStep(i),
       s => s.instrument
     )
-
-  implicit def defaultDarkStep[I](implicit ev: Default[I]): Default[DarkStep[I]] =
-    Default.forValue(DarkStep(ev.default))
 }
 
 final case class GcalStep[I](instrument: I, gcal: GcalUnit) extends Step2[I] {
@@ -62,9 +56,6 @@ object GcalStep {
       t => GcalStep(t._1, t._2),
       s => (s.instrument, s.gcal)
     )
-
-  implicit def defaultGcalStep[I](implicit ev: Default[I]): Default[GcalStep[I]] =
-    Default.forValue(GcalStep(ev.default, GcalUnit.DefaultGcal.default))
 }
 
 final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step2[I] {
@@ -77,9 +68,6 @@ object ScienceStep {
       t => ScienceStep(t._1, t._2),
       s => (s.instrument, s.telescope)
     )
-
-  implicit def defaultScienceStep[I](implicit ev: Default[I]): Default[ScienceStep[I]] =
-    Default.forValue(ScienceStep(ev.default, Telescope.DefaultTelescope.default))
 }
 
 final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step2[I] {
@@ -106,11 +94,11 @@ object SmartStep {
     val inst: SmartStep[I] @> I = Lens.lensu((a, b) => a.copy(instrument = b), _.instrument)
 
     new Describe[SmartStep[I]] {
+      val default: SmartStep[I] =
+        SmartStep(implicitly[Describe[I]].default, SmartStep.Type.Arc)
+
       val props: List[Prop[SmartStep[I]]] =
         TypeProp :: implicitly[Describe[I]].props.map(_ compose inst)
     }
   }
-
-  implicit def defaultSmartStep[I](implicit ev: Default[I]): Default[SmartStep[I]] =
-    Default.forValue(SmartStep(ev.default, SmartStep.Type.Arc))
 }

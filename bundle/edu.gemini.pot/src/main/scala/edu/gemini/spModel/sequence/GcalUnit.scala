@@ -31,8 +31,8 @@ object GcalUnit {
   }
 
   implicit val DescribeGcal: Describe[GcalUnit] =
-    Describe.forProps(LampProp, ShutterProp)
-
-  implicit val DefaultGcal: Default[GcalUnit] =
-    Default.forValue(GcalUnit(GcalUnit.Lamp.IrHigh, GcalUnit.Shutter.Open))
+    Describe.forProps(
+      GcalUnit(GcalUnit.Lamp.IrHigh, GcalUnit.Shutter.Open),
+      LampProp, ShutterProp
+    )
 }

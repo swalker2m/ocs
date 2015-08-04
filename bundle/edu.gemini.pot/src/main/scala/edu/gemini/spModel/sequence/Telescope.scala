@@ -23,8 +23,8 @@ object Telescope {
   }
 
   implicit val DescribeTelescope: Describe[Telescope] =
-    Describe.forProps(OffsetPProp, OffsetQProp)
-
-  implicit val DefaultTelescope: Default[Telescope] =
-    Default.forValue(Telescope(OffsetP.Zero, OffsetQ.Zero))
+    Describe.forProps(
+      Telescope(OffsetP.Zero, OffsetQ.Zero),
+      OffsetPProp, OffsetQProp
+    )
 }

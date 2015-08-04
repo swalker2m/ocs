@@ -11,7 +11,7 @@ import Scalaz._
 /** A sequence is an initial step and a list of diffs. */
 final class Sequence2[I] private (private val ser: NonEmptyList[Sequence2.SerSteps]) extends Serializable {
 
-  def toSteps(implicit ev0: Describe[I], ev1: Default[I]): NonEmptyList[Step2[I]] =
+  def toSteps(implicit ev: Describe[I]): NonEmptyList[Step2[I]] =
     ser.flatMap(_.toSteps)
 }
 
@@ -21,22 +21,22 @@ object Sequence2 {
   // made private and shouldn't escape the sequence implementation.
   private class SerSteps(stepType: Step2.Type, values: NonEmptyList[RunLength[_]]) extends Serializable {
 
-    def toSteps[I: Describe : Default]: NonEmptyList[Step2[I]] = {
+    def toSteps[I: Describe]: NonEmptyList[Step2[I]] = {
       val rows = values.list.map(_.toList).transpose
 
-      def steps[S <: Step2[I]](default: S, props: List[Prop[S]]): NonEmptyList[S] =
-        rows.scanLeft(default) { (s, r) =>
-          (s/:r.zip(props)) { case (s1, (a, p)) =>
+      def steps[S <: Step2[I]](desc: Describe[S]): NonEmptyList[S] =
+        rows.scanLeft(desc.default) { (s, r) =>
+          (s/:r.zip(desc.props)) { case (s1, (a, p)) =>
             p.lens.set(s1, a.asInstanceOf[p.B])
           }
         }.tail.toNel.get
 
       stepType match {
-        case Bias    => steps(implicitly[Default[BiasStep[I]]].default,    implicitly[Describe[BiasStep[I]]].props)
-        case Dark    => steps(implicitly[Default[DarkStep[I]]].default,    implicitly[Describe[DarkStep[I]]].props)
-        case Gcal    => steps(implicitly[Default[GcalStep[I]]].default,    implicitly[Describe[GcalStep[I]]].props)
-        case Science => steps(implicitly[Default[ScienceStep[I]]].default, implicitly[Describe[ScienceStep[I]]].props)
-        case Smart   => steps(implicitly[Default[SmartStep[I]]].default,   implicitly[Describe[SmartStep[I]]].props)
+        case Bias    => steps(implicitly[Describe[BiasStep[I]]])
+        case Dark    => steps(implicitly[Describe[DarkStep[I]]])
+        case Gcal    => steps(implicitly[Describe[GcalStep[I]]])
+        case Science => steps(implicitly[Describe[ScienceStep[I]]])
+        case Smart   => steps(implicitly[Describe[SmartStep[I]]])
       }
     }
   }
