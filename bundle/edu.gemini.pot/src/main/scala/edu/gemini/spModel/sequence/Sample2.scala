@@ -48,11 +48,8 @@ object Sample2 extends App {
 
   val seq = Sequence2.fromSteps(steps)
 
-//  val steps2 = deserialize[Sequence2[F2]](serialize(seq)).toSteps
-//  Exception in thread "main" java.io.NotSerializableException: scalaz.NonEmptyListFunctions$$anon$4
-//  	at java.io.ObjectOutputStream.writeObject0(ObjectOutputStream.java:1184)
-
-  val steps2 = seq.toSteps
+//  val steps2 = seq.toSteps
+  val steps2 = deserialize[Sequence2[F2]](serialize(seq)).toSteps
 
   steps2.list.foreach(println)
 }

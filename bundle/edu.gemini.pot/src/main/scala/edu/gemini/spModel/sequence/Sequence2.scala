@@ -8,21 +8,46 @@ import scala.reflect.ClassTag
 import scalaz._
 import Scalaz._
 
-/** A sequence is an initial step and a list of diffs. */
-final class Sequence2[I] private (private val ser: NonEmptyList[Sequence2.SerSteps]) extends Serializable {
+/** A sequence is logically a NonEmptyList[Step[I]], where I is some Instrument.
+  * We don't directly store it that way for a couple of reasons:
+  *
+  * <ul>
+  * <li> NonEmptyList is not Serializable and we require that sequences be
+  *      serializable so that they may be transferred by TRPC.</li>
+  * <li> It would be inefficient to store and transfer the expanded sequence in
+  *      that way.</li>
+  * </ul>
+  *
+  * Instead we break the sequence into chunks of SerSteps, where each chunk is
+  * of the same Step type.  The sequence is guaranteed to have at least one
+  * chunk of SerSteps but may have any number of trailing chunks.
+  *
+  * Each SerSteps is a compact representation of the properties associated with
+  * the instrument and step type.  In particular, we store the first value of
+  * the series of steps and then the only the differences for the remainder of
+  * the steps (see RunLength).
+  *
+  * Note the internal representation isn't exposed so that there is no way to
+  * create an invalid sequence.  To get the local view of NonEmptyList[Step[I]],
+  * a `toSteps` method is provided.  To create a new sequence, use `fromSteps`.
+  */
+final class Sequence2[I] private (private val head: Sequence2.SerSteps, private val tail: List[Sequence2.SerSteps]) extends Serializable {
 
+  private def this(sers: NonEmptyList[Sequence2.SerSteps]) = this(sers.head, sers.tail)
+
+  /** Gets the listing of steps associated with this sequence. */
   def toSteps(implicit ev: Describe[I]): NonEmptyList[Step2[I]] =
-    ser.flatMap(_.toSteps)
+    NonEmptyList.nel(head, tail).flatMap(_.toSteps)
 }
 
 object Sequence2 {
 
   // These type tags are used only in the deserialization process, so they are
   // made private and shouldn't escape the sequence implementation.
-  private class SerSteps(stepType: Step2.Type, values: NonEmptyList[RunLength[_]]) extends Serializable {
+  private class SerSteps(stepType: Step2.Type, values: List[RunLength[_]]) extends Serializable {
 
     def toSteps[I: Describe]: NonEmptyList[Step2[I]] = {
-      val rows = values.list.map(_.toList).transpose
+      val rows = values.map(_.toList).transpose
 
       def steps[S <: Step2[I]](desc: Describe[S]): NonEmptyList[S] =
         rows.scanLeft(desc.default) { (s, r) =>
@@ -41,6 +66,7 @@ object Sequence2 {
     }
   }
 
+  /** Creates a sequence from a non-empty list of steps. */
   def fromSteps[I: Describe](steps: NonEmptyList[Step2[I]]): Sequence2[I] = {
     def toSer[S](stepType: Step2.Type, steps: NonEmptyList[S], props: List[Prop[S]])(implicit ev: ClassTag[S]): SerSteps = {
       val empty = List.fill(props.length)(RunLength.empty[p.B forSome {val p: Prop[S]}])
@@ -49,7 +75,7 @@ object Sequence2 {
           (p.lens.get(s) :: rl.asInstanceOf[RunLength[p.B]])(p.eq)
         }
       }
-      new SerSteps(stepType, runs.toNel.get)
+      new SerSteps(stepType, runs)
     }
 
     @tailrec
