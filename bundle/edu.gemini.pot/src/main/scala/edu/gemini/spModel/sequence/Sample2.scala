@@ -51,5 +51,9 @@ object Sample2 extends App {
 //  val steps2 = seq.toSteps
   val steps2 = deserialize[Sequence2[F2]](serialize(seq)).toSteps
 
-  steps2.list.foreach(println)
+//  steps2.list.foreach(println)
+
+  steps2.list.foreach { step =>
+    println(step.shows)
+  }
 }

@@ -1,5 +1,8 @@
 package edu.gemini.spModel.sequence
 
+import Metadata.Access._
+import Metadata.Scope._
+
 import scalaz._, Scalaz._
 
 sealed trait Step2[I] {
@@ -19,7 +22,27 @@ object Step2 {
   case object Science extends Type
   case object Smart   extends Type
 
-  implicit def EqualType: Equal[Type] = Equal.equalA
+  implicit val EqualType: Equal[Type] = Equal.equalA
+
+  implicit def showStep[I : Describe]: Show[Step2[I]] = {
+    def showVals[A : Describe](name: String, a: A): String = {
+      val props  = implicitly[Describe[A]].props
+      val values = props.map { p =>
+        val b = p.lens.get(a)
+        s"${p.meta.name} = ${p.meta.log(b)}"
+      }
+
+      values.mkString(name + " {", ", ", "}")
+    }
+
+    Show.shows[Step2[I]] {
+      case BiasStep(i)       => "Bias: " + showVals("inst", i)
+      case DarkStep(i)       => "Dark: " + showVals("inst", i)
+      case GcalStep(i, g)    => "Gcal: " + showVals("inst", i) + " " + showVals("gcal", g)
+      case ScienceStep(i, t) => "Science: " + showVals("inst", i) + " " + showVals("telescope", t)
+      case SmartStep(i, t)   => s"Smart $t: " + showVals("inst", i)
+    }
+  }
 }
 
 final case class BiasStep[I](instrument: I) extends Step2[I] {
@@ -81,6 +104,8 @@ object SmartStep {
     case object Flat          extends Type
     case object DayBaseline   extends Type
     case object NightBaseline extends Type
+
+    val All = NonEmptyList(Arc, Flat, DayBaseline, NightBaseline)
   }
 
   implicit def describeSmartStep[I: Describe]: Describe[SmartStep[I]] = {
@@ -89,6 +114,13 @@ object SmartStep {
       val eq: Equal[Type] = Equal.equalA
 
       def lens: SmartStep[I] @> Type = Lens.lensu((a, b) => a.copy(smartStepType = b), _.smartStepType)
+
+      val meta = EnumMetadata[Type](
+        "type",
+        Science,
+        SingleStep,
+        Type.All,
+        _.toString)
     }
 
     val inst: SmartStep[I] @> I = Lens.lensu((a, b) => a.copy(instrument = b), _.instrument)

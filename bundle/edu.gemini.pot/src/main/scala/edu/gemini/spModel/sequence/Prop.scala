@@ -12,6 +12,8 @@ trait Prop[A] { self =>
   def eq: Equal[B]
   def lens: A @> B
 
+  def meta: Metadata[B]
+
   /** Determines whether the property value is the same across two instances. */
   def propEqual(a0: A, a1: A): Boolean = eq.equal(lens.get(a0), lens.get(a1))
 
@@ -22,6 +24,8 @@ trait Prop[A] { self =>
 
       val eq   = self.eq
       val lens = self.lens.xmapA(f)(g)
+
+      val meta = self.meta
     }
 
   def compose[T](ta: T @> A): Prop[T] { type B = self.B } =
@@ -30,5 +34,7 @@ trait Prop[A] { self =>
 
       val eq   = self.eq
       val lens = self.lens compose ta
+
+      val meta = self.meta
     }
 }
