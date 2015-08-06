@@ -5,12 +5,12 @@ import Metadata.Scope._
 
 import scalaz._, Scalaz._
 
-sealed trait Step2[I] {
+sealed trait Step[I] {
   def instrument: I
-  def stepType: Step2.Type
+  def stepType: Step.Type
 }
 
-object Step2 {
+object Step {
 
   // Step type is used in deserializing a sequence.  Given a specific step
   // type we can use the corresponding Default type class instance to create a
@@ -24,7 +24,7 @@ object Step2 {
 
   implicit val EqualType: Equal[Type] = Equal.equalA
 
-  implicit def showStep[I : Describe]: Show[Step2[I]] = {
+  implicit def showStep[I : Describe]: Show[Step[I]] = {
     def showVals[A : Describe](name: String, a: A): String = {
       val props  = implicitly[Describe[A]].props
       val values = props.map { p =>
@@ -35,7 +35,7 @@ object Step2 {
       values.mkString(name + " {", ", ", "}")
     }
 
-    Show.shows[Step2[I]] {
+    Show.shows[Step[I]] {
       case BiasStep(i)       => "Bias: " + showVals("inst", i)
       case DarkStep(i)       => "Dark: " + showVals("inst", i)
       case GcalStep(i, g)    => "Gcal: " + showVals("inst", i) + " " + showVals("gcal", g)
@@ -45,8 +45,8 @@ object Step2 {
   }
 }
 
-final case class BiasStep[I](instrument: I) extends Step2[I] {
-  def stepType = Step2.Bias
+final case class BiasStep[I](instrument: I) extends Step[I] {
+  def stepType = Step.Bias
 }
 
 object BiasStep {
@@ -57,8 +57,8 @@ object BiasStep {
     )
 }
 
-final case class DarkStep[I](instrument: I) extends Step2[I] {
-  def stepType = Step2.Dark
+final case class DarkStep[I](instrument: I) extends Step[I] {
+  def stepType = Step.Dark
 }
 
 object DarkStep {
@@ -69,8 +69,8 @@ object DarkStep {
     )
 }
 
-final case class GcalStep[I](instrument: I, gcal: GcalUnit) extends Step2[I] {
-  def stepType = Step2.Gcal
+final case class GcalStep[I](instrument: I, gcal: GcalUnit) extends Step[I] {
+  def stepType = Step.Gcal
 }
 
 object GcalStep {
@@ -81,8 +81,8 @@ object GcalStep {
     )
 }
 
-final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step2[I] {
-  def stepType = Step2.Science
+final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step[I] {
+  def stepType = Step.Science
 }
 
 object ScienceStep {
@@ -93,8 +93,8 @@ object ScienceStep {
     )
 }
 
-final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step2[I] {
-  def stepType = Step2.Smart
+final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step[I] {
+  def stepType = Step.Smart
 }
 
 object SmartStep {

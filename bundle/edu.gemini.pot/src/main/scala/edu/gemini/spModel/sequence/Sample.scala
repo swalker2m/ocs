@@ -9,7 +9,7 @@ import java.io.{ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, 
 import scalaz._
 import Scalaz._
 
-object Sample2 extends App {
+object Sample extends App {
   def serialize[A](a: A): Array[Byte] = {
     val baos = new ByteArrayOutputStream()
     val oos = new ObjectOutputStream(baos)
@@ -46,10 +46,10 @@ object Sample2 extends App {
     SmartStep(   f2_H, SmartStep.Type.Flat)
   )
 
-  val seq = Sequence2.fromSteps(steps)
+  val seq = Sequence.fromSteps(steps)
 
 //  val steps2 = seq.toSteps
-  val steps2 = deserialize[Sequence2[F2]](serialize(seq)).toSteps
+  val steps2 = deserialize[Sequence[F2]](serialize(seq)).toSteps
 
 //  steps2.list.foreach(println)
 
