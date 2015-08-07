@@ -14,8 +14,6 @@ final case class Telescope(p: OffsetP, q: OffsetQ) {
 }
 
 object Telescope {
-  private val OffsetPat = """([-+]?\d*\.?\d+)""".r
-
   object OffsetPProp extends Prop[Telescope] {
     type B = OffsetP
     val eq: Equal[OffsetP]         = Equal[OffsetP]
