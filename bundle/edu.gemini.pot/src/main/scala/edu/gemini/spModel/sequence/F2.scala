@@ -7,12 +7,15 @@ import Metadata.Access._
 import Metadata.Attrs
 import Metadata.Scope._
 
+import java.time.Duration
+
 import scalaz._
 import Scalaz._
 
 final case class F2(
     fpu: FPUnit,
     mosPreimaging: Boolean,
+    exposureTime: Duration,
     filter: Filter,
     lyoutWheel: LyotWheel,
     disperser: Disperser
@@ -39,6 +42,19 @@ object F2 {
     val lens: F2 @> Boolean = Lens.lensu((a,b) => a.copy(mosPreimaging = b), _.mosPreimaging)
 
     val meta = BooleanMetadata(Attrs("mosPreimaging", "MOS pre-imaging", Science, Global))
+  }
+
+  object ExposureTimeProp extends Prop[F2] {
+    type B = Duration
+    val eq: Equal[Duration]  = Equal.equalA
+    val lens: F2 @> Duration = Lens.lensu((a,b) => a.copy(exposureTime = b), _.exposureTime)
+
+    val meta = TextMetadata[Duration](
+      Attrs("exposureTime", "Exposure Time", Science, SingleStep),
+      Some("sec"),
+      et => f"${et.toMillis/1000.0}%4.01f",
+      doubleParser("Exposure Time", _)(d => Duration.ofMillis(math.round(d * 1000)))
+    )
   }
 
   object FilterProp extends Prop[F2] {
@@ -70,12 +86,14 @@ object F2 {
       F2(
         FPUnit.DEFAULT,
         mosPreimaging = false,
+        Duration.ofMillis(85000),
         Filter.DEFAULT,
         LyotWheel.DEFAULT,
         Disperser.DEFAULT
       ),
       FocalPlaneUnitProp,
       MosPreimagingProp,
+      ExposureTimeProp,
       FilterProp,
       LyotWheelProp,
       DisperserProp

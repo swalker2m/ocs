@@ -25,10 +25,7 @@ object Telescope {
       Attrs("p", "p", Science, SingleStep),
       Some("arcsec"),
       p => f"${p.arcsecs}%4.03f",
-      {
-        case OffsetPat(p) => p.toDouble.arcsecs[OffsetP].right
-        case s            => s"Could not parse as offset in p: $s".left
-      }
+      doubleParser("Offset p", _)(_.arcsecs[OffsetP])
     )
   }
 
@@ -41,10 +38,7 @@ object Telescope {
       Attrs("q", "q", Science, SingleStep),
       Some("arcsec"),
       q => f"${q.arcsecs}%4.03f",
-      {
-        case OffsetPat(q) => q.toDouble.arcsecs[OffsetQ].right
-        case s            => s"Could not parse as offset in q: $s".left
-      }
+      doubleParser("Offset q", _)(_.arcsecs[OffsetQ])
     )
   }
 
