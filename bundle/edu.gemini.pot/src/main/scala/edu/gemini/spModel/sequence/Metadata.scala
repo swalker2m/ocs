@@ -32,9 +32,9 @@ object Metadata {
 }
 
 /** Convenience class for creating a `Metadata` instance for enum values. */
-case class EnumMetadata[A](name: String, access: Metadata.Access, scope: Metadata.Scope, all: NonEmptyList[A], log: A => String) extends Metadata[A] {
+case class EnumMetadata[A](name: String, access: Metadata.Access, scope: Metadata.Scope, all: Array[A], log: A => String) extends Metadata[A] {
   def serialize(a: A): String = log(a)
   def deserialize(s: String): String \/ A =
-    all.list.find(a => log(a) === s) \/> s"$name not recognized: $s"
+    all.find(a => log(a) === s) \/> s"$name not recognized: $s"
 }
 

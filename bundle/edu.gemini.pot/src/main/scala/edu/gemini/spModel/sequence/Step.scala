@@ -119,7 +119,7 @@ object SmartStep {
         "type",
         Science,
         SingleStep,
-        Type.All,
+        Type.All.list.toArray,
         _.toString)
     }
 

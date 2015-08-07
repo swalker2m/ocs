@@ -1,6 +1,7 @@
 package edu.gemini.spModel.sequence
 
 
+import edu.gemini.spModel.gemini.flamingos2.Flamingos2.{Filter, Disperser}
 import edu.gemini.spModel.core.AngleSyntax._
 import edu.gemini.spModel.core.{OffsetQ, OffsetP}
 
@@ -26,8 +27,8 @@ object Sample extends App {
     f2
   }
 
-  val f2_J = F2(F2.Filter.J, F2.Disperser.None)
-  val f2_H = F2(F2.Filter.H, F2.Disperser.None)
+  val f2_J = F2(Filter.J, Disperser.NONE)
+  val f2_H = F2(Filter.H, Disperser.NONE)
 
   val nod_A = Telescope(OffsetP.Zero,   40.0.arcsecs[OffsetQ])
   val nod_B = Telescope(OffsetP.Zero, (-40.0).arcsecs[OffsetQ])
