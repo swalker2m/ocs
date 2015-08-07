@@ -1,8 +1,9 @@
 package edu.gemini.spModel.sequence
 
-import edu.gemini.spModel.core.AngleSyntax.FromDegreesOps
+import edu.gemini.spModel.core.AngleSyntax._
 import edu.gemini.spModel.core.{OffsetQ, OffsetP, Offset}
 import edu.gemini.spModel.sequence.Metadata.Access.Science
+import edu.gemini.spModel.sequence.Metadata.Attrs
 import edu.gemini.spModel.sequence.Metadata.Scope.SingleStep
 
 import scalaz._
@@ -13,7 +14,7 @@ final case class Telescope(p: OffsetP, q: OffsetQ) {
 }
 
 object Telescope {
-  private val OffsetPat = """([-+]?\d*\.?\d+) arcsecs""".r
+  private val OffsetPat = """([-+]?\d*\.?\d+)""".r
 
   object OffsetPProp extends Prop[Telescope] {
     type B = OffsetP
@@ -21,10 +22,9 @@ object Telescope {
     val lens: Telescope @> OffsetP = Lens.lensu((a, b) => a.copy(p = b), _.p)
 
     val meta = new TextMetadata[OffsetP](
-      "p",
-      Science,
-      SingleStep,
-      _.shows,
+      Attrs("p", "p", Science, SingleStep),
+      Some("arcsec"),
+      p => f"${p.arcsecs}%4.03f",
       {
         case OffsetPat(p) => p.toDouble.arcsecs[OffsetP].right
         case s            => s"Could not parse as offset in p: $s".left
@@ -38,10 +38,9 @@ object Telescope {
     val lens: Telescope @> OffsetQ = Lens.lensu((a, b) => a.copy(q = b), _.q)
 
     val meta = new TextMetadata[OffsetQ](
-      "q",
-      Science,
-      SingleStep,
-      _.shows,
+      Attrs("q", "q", Science, SingleStep),
+      Some("arcsec"),
+      q => f"${q.arcsecs}%4.03f",
       {
         case OffsetPat(q) => q.toDouble.arcsecs[OffsetQ].right
         case s            => s"Could not parse as offset in q: $s".left

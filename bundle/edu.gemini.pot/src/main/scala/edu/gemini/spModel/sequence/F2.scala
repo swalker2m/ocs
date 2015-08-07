@@ -3,8 +3,9 @@ package edu.gemini.spModel.sequence
 import edu.gemini.pot.sp.SPComponentType
 import edu.gemini.spModel.gemini.flamingos2.Flamingos2.{Disperser, Filter, FPUnit, LyotWheel}
 
-import Metadata.Scope._
 import Metadata.Access._
+import Metadata.Attrs
+import Metadata.Scope._
 
 import scalaz._
 import Scalaz._
@@ -29,7 +30,7 @@ object F2 {
     val eq: Equal[FPUnit]  = Equal.equalA
     val lens: F2 @> FPUnit = Lens.lensu((a,b) => a.copy(fpu = b), _.fpu)
 
-    val meta = fromJava("fpu", Science, SingleStep, classOf[FPUnit])
+    val meta = fromJava(Attrs("fpu", "Focal Plane Unit", Science, SingleStep), classOf[FPUnit])
   }
 
   object MosPreimagingProp extends Prop[F2] {
@@ -37,7 +38,7 @@ object F2 {
     val eq: Equal[Boolean]  = implicitly[Equal[Boolean]]
     val lens: F2 @> Boolean = Lens.lensu((a,b) => a.copy(mosPreimaging = b), _.mosPreimaging)
 
-    val meta = BooleanMetadata("mosPreimaging", Science, Global)
+    val meta = BooleanMetadata(Attrs("mosPreimaging", "MOS pre-imaging", Science, Global))
   }
 
   object FilterProp extends Prop[F2] {
@@ -45,7 +46,7 @@ object F2 {
     val eq: Equal[Filter]  = Equal.equalA
     val lens: F2 @> Filter = Lens.lensu((a,b) => a.copy(filter = b), _.filter)
 
-    val meta = fromJava("filter", Science, SingleStep, classOf[Filter])
+    val meta = fromJava(Attrs("filter", "Filter", Science, SingleStep), classOf[Filter])
   }
 
   object LyotWheelProp extends Prop[F2] {
@@ -53,7 +54,7 @@ object F2 {
     val eq: Equal[LyotWheel]  = Equal.equalA
     val lens: F2 @> LyotWheel = Lens.lensu((a,b) => a.copy(lyoutWheel = b), _.lyoutWheel)
 
-    val meta = fromJava("lyotWheel", Science, SingleStep, classOf[LyotWheel])
+    val meta = fromJava(Attrs("lyotWheel", "Lyot Wheel", Science, SingleStep), classOf[LyotWheel])
   }
 
   object DisperserProp extends Prop[F2] {
@@ -61,7 +62,7 @@ object F2 {
     val eq: Equal[Disperser]  = Equal.equalA
     val lens: F2 @> Disperser = Lens.lensu((a,b) => a.copy(disperser = b), _.disperser)
 
-    val meta = fromJava("disperser", Science, SingleStep, classOf[Disperser])
+    val meta = fromJava(Attrs("disperser", "Disperser", Science, SingleStep), classOf[Disperser])
   }
 
   implicit val DescribeF2: Describe[F2] =
