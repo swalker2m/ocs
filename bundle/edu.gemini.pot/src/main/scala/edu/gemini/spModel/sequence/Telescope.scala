@@ -20,18 +20,16 @@ object Telescope {
     val eq: Equal[OffsetP]         = Equal[OffsetP]
     val lens: Telescope @> OffsetP = Lens.lensu((a, b) => a.copy(p = b), _.p)
 
-    val meta  = new Metadata[OffsetP] {
-      override val name   = "p"
-      override val access = Science
-      override val scope  = SingleStep
-      override val log    = (p: OffsetP) => p.shows
-
-      override def serialize(a: OffsetP)  = a.shows
-      override def deserialize(s: String) = s match {
+    val meta = new TextMetadata[OffsetP](
+      "p",
+      Science,
+      SingleStep,
+      _.shows,
+      {
         case OffsetPat(p) => p.toDouble.arcsecs[OffsetP].right
-        case _            => s"Could not parse as offset in p: $s".left
+        case s            => s"Could not parse as offset in p: $s".left
       }
-    }
+    )
   }
 
   object OffsetQProp extends Prop[Telescope] {
@@ -39,18 +37,16 @@ object Telescope {
     val eq: Equal[OffsetQ]         = Equal[OffsetQ]
     val lens: Telescope @> OffsetQ = Lens.lensu((a, b) => a.copy(q = b), _.q)
 
-    val meta  = new Metadata[OffsetQ] {
-      override val name   = "q"
-      override val access = Science
-      override val scope  = SingleStep
-      override val log    = (q: OffsetQ) => q.shows
-
-      override def serialize(a: OffsetQ)  = a.shows
-      override def deserialize(s: String) = s match {
+    val meta = new TextMetadata[OffsetQ](
+      "q",
+      Science,
+      SingleStep,
+      _.shows,
+      {
         case OffsetPat(q) => q.toDouble.arcsecs[OffsetQ].right
-        case _            => s"Could not parse as offset in q: $s".left
+        case s            => s"Could not parse as offset in q: $s".left
       }
-    }
+    )
   }
 
   implicit val DescribeTelescope: Describe[Telescope] =

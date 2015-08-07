@@ -1,69 +1,83 @@
 package edu.gemini.spModel.sequence
 
 import edu.gemini.pot.sp.SPComponentType
-import edu.gemini.spModel.gemini.flamingos2.Flamingos2.{Filter, Disperser}
+import edu.gemini.spModel.gemini.flamingos2.Flamingos2.{Disperser, Filter, FPUnit, LyotWheel}
+
+import Metadata.Scope._
+import Metadata.Access._
 
 import scalaz._
 import Scalaz._
 
-final case class F2(filter: Filter, disperser: Disperser) extends Instrument {
+final case class F2(
+    fpu: FPUnit,
+    mosPreimaging: Boolean,
+    filter: Filter,
+    lyoutWheel: LyotWheel,
+    disperser: Disperser
+ ) extends Instrument {
   def name = "F2"
   def componentType = SPComponentType.INSTRUMENT_FLAMINGOS2
 }
 
 object F2 {
-  import Metadata.Scope._
-  import Metadata.Access._
 
-//  sealed abstract class Filter(val name: String, val log: String, val wavelength: Option[Double]) extends Serializable
-//  object Filter {
-//    case object J     extends Filter("J (1.25 um)",      "J",      Some(1.25))
-//    case object H     extends Filter("H (1.65 um)",      "H",      Some(1.65))
-//    case object KLong extends Filter("K-long (2.00 um)", "K-long", Some(2.00))
-//
-//    val All = NonEmptyList(J, H, KLong)
-//  }
+  import EnumMetadata.fromJava
+
+  object FocalPlaneUnitProp extends Prop[F2] {
+    type B = FPUnit
+    val eq: Equal[FPUnit]  = Equal.equalA
+    val lens: F2 @> FPUnit = Lens.lensu((a,b) => a.copy(fpu = b), _.fpu)
+
+    val meta = fromJava("fpu", Science, SingleStep, classOf[FPUnit])
+  }
+
+  object MosPreimagingProp extends Prop[F2] {
+    type B = Boolean
+    val eq: Equal[Boolean]  = implicitly[Equal[Boolean]]
+    val lens: F2 @> Boolean = Lens.lensu((a,b) => a.copy(mosPreimaging = b), _.mosPreimaging)
+
+    val meta = BooleanMetadata("mosPreimaging", Science, Global)
+  }
 
   object FilterProp extends Prop[F2] {
     type B = Filter
     val eq: Equal[Filter]  = Equal.equalA
     val lens: F2 @> Filter = Lens.lensu((a,b) => a.copy(filter = b), _.filter)
 
-    val meta  = EnumMetadata[Filter](
-      "filter",
-      Science,
-      SingleStep,
-      Filter.values(),
-      _.logValue)
+    val meta = fromJava("filter", Science, SingleStep, classOf[Filter])
   }
 
-//  sealed abstract class Disperser(val name: String, val log: String, val wavelength: Option[Double]) extends Serializable
-//  object Disperser {
-//    case object None    extends Disperser("None",                       "none",    none)
-//    case object R1200JH extends Disperser("R=1200 (J + H) grism",       "R1200JH", some(1.390))
-//    case object R1200HK extends Disperser("R=1200 (H + K) grism",       "R1200HK", some(1.871))
-//    case object R3000   extends Disperser("R=3000 (J or H or K) grism", "R3000",   some(1.650))
-//
-//    val All = NonEmptyList(None, R1200JH, R1200HK, R3000)
-//  }
+  object LyotWheelProp extends Prop[F2] {
+    type B = LyotWheel
+    val eq: Equal[LyotWheel]  = Equal.equalA
+    val lens: F2 @> LyotWheel = Lens.lensu((a,b) => a.copy(lyoutWheel = b), _.lyoutWheel)
+
+    val meta = fromJava("lyotWheel", Science, SingleStep, classOf[LyotWheel])
+  }
 
   object DisperserProp extends Prop[F2] {
     type B = Disperser
     val eq: Equal[Disperser]  = Equal.equalA
     val lens: F2 @> Disperser = Lens.lensu((a,b) => a.copy(disperser = b), _.disperser)
 
-    val meta = EnumMetadata[Disperser](
-      "disperser",
-      Science,
-      SingleStep,
-      Disperser.values(),
-      _.logValue)
+    val meta = fromJava("disperser", Science, SingleStep, classOf[Disperser])
   }
 
   implicit val DescribeF2: Describe[F2] =
     Describe.forProps(
-      F2(Filter.DEFAULT, Disperser.DEFAULT),
-      FilterProp, DisperserProp
+      F2(
+        FPUnit.DEFAULT,
+        mosPreimaging = false,
+        Filter.DEFAULT,
+        LyotWheel.DEFAULT,
+        Disperser.DEFAULT
+      ),
+      FocalPlaneUnitProp,
+      MosPreimagingProp,
+      FilterProp,
+      LyotWheelProp,
+      DisperserProp
     )
 
 }

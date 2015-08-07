@@ -29,7 +29,7 @@ object Step {
       val props  = implicitly[Describe[A]].props
       val values = props.map { p =>
         val b = p.lens.get(a)
-        s"${p.meta.name} = ${p.meta.log(b)}"
+        s"${p.meta.name} = ${p.meta.show(b)}"
       }
 
       values.mkString(name + " {", ", ", "}")
@@ -119,8 +119,7 @@ object SmartStep {
         "type",
         Science,
         SingleStep,
-        Type.All.list.toArray,
-        _.toString)
+        Type.All)
     }
 
     val inst: SmartStep[I] @> I = Lens.lensu((a, b) => a.copy(instrument = b), _.instrument)

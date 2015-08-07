@@ -27,8 +27,9 @@ object Sample extends App {
     f2
   }
 
-  val f2_J = F2(Filter.J, Disperser.NONE)
-  val f2_H = F2(Filter.H, Disperser.NONE)
+  val f2   = implicitly[Describe[F2]].default
+  val f2_J = f2.copy(filter = Filter.J)
+  val f2_H = f2.copy(filter = Filter.H)
 
   val nod_A = Telescope(OffsetP.Zero,   40.0.arcsecs[OffsetQ])
   val nod_B = Telescope(OffsetP.Zero, (-40.0).arcsecs[OffsetQ])
