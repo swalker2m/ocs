@@ -18,4 +18,5 @@ public interface ISPProgramVisitor {
     void visitTemplateFolder(ISPTemplateFolder node);
     void visitTemplateGroup(ISPTemplateGroup node);
     void visitTemplateParameters(ISPTemplateParameters node);
+    void visitSequence(ISPSequence node);
 }

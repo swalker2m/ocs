@@ -15,6 +15,7 @@ import edu.gemini.util.security.permission.StaffPermission;
 import jsky.app.ot.OT;
 import jsky.app.ot.OTOptions;
 import jsky.app.ot.gemini.obscat.ObsCatalog;
+import jsky.app.ot.editor.sequence.SequenceEditor;
 import jsky.app.ot.plugin.OtActionPlugin;
 import jsky.app.ot.session.SessionQueuePanel;
 import jsky.app.ot.userprefs.general.GeneralPreferencesPanel;
@@ -411,12 +412,16 @@ final class SPViewerMenuBar extends JMenuBar {
         // Iterator Component submenu
         final JMenu iterCompMenu = new JMenu("Create an Iterator Component");
         iterCompMenu.setIcon(Resources.getIcon("iterComp.gif"));
-        iterCompMenu.add(new JMenuItem(_viewer._actions.addSequenceAction));
+        iterCompMenu.add(new JMenuItem(_viewer._actions.addSeqCompAction));
         iterCompMenu.addSeparator();
         for (final AbstractAction action : _viewer._actions.addInstrumentIteratorActions) {
             iterCompMenu.add(new JMenuItem(action));
         }
         menu.add(iterCompMenu);
+
+        if (SequenceEditor.NewSequenceSupport()) {
+            menu.add(_viewer._actions.addSequenceAction);
+        }
 
         // Observation Iterator submenu
         final JMenu iterObsMenu = new JMenu("Create an Observe Iterator");

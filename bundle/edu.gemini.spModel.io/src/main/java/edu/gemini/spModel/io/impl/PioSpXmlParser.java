@@ -88,6 +88,12 @@ public final class PioSpXmlParser {
         }
     };
 
+    private static final NodeBuilder<ISPSequence> SEQUENCE_BUILDER = new SimpleNodeBuilder<ISPSequence>(SpIOTags.SEQUENCE) {
+        @Override protected ISPSequence createEmpty(ISPFactory f, ISPProgram p, Container c, SPNodeKey k) throws SPException {
+            return f.createSequence(p, k);
+        }
+    };
+
     private static final NodeBuilder<ISPObservation> OBSERVATION_BUILDER = new NodeBuilder<ISPObservation>() {
         @Override public boolean matches(Container c) {
             return SpIOTags.OBSERVATION.equals(c.getKind());
@@ -160,6 +166,7 @@ public final class PioSpXmlParser {
         l.add(TEMPLATE_FOLDER_BUILDER);
         l.add(TEMPLATE_GROUP_BUILDER);
         l.add(TEMPLATE_PARAMETERS_BUILDER);
+        l.add(SEQUENCE_BUILDER);
         BUILDERS = Collections.unmodifiableList(l);
     }
 

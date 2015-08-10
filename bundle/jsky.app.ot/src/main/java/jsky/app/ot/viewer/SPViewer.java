@@ -23,6 +23,7 @@ import jsky.app.ot.editor.OtItemEditor;
 import jsky.app.ot.editor.eng.EngEditor;
 import jsky.app.ot.editor.eng.EngToolWindow;
 import jsky.app.ot.editor.seq.EdIteratorFolder;
+import jsky.app.ot.editor.sequence.SequenceEditor;
 import jsky.app.ot.gemini.editor.EdProgram;
 import jsky.app.ot.nsp.UIInfo;
 import jsky.app.ot.plugin.OtActionPlugin;
@@ -286,7 +287,7 @@ public final class SPViewer extends SPViewerGUI implements PropertyChangeListene
         // Iterator Component submenu
         final JMenu iterCompMenu = new JMenu("Create an Iterator Component");
         iterCompMenu.setIcon(jsky.app.ot.util.Resources.getIcon("iterComp.gif"));
-        iterCompMenu.add(new JMenuItem(_actions.addSequenceAction));
+        iterCompMenu.add(new JMenuItem(_actions.addSeqCompAction));
 
         iterCompMenu.addSeparator();
 
@@ -302,6 +303,10 @@ public final class SPViewer extends SPViewerGUI implements PropertyChangeListene
             iterObsMenu.add(new JMenuItem(action));
         }
         menu.add(iterObsMenu);
+
+        if (SequenceEditor.NewSequenceSupport()) {
+            menu.add(_actions.addSequenceAction);
+        }
 
         menu.addSeparator();
         menu.add(_actions.cutAction);

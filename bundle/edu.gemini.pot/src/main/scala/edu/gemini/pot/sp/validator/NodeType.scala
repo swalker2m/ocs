@@ -32,6 +32,7 @@ object NodeType {
       case n: ISPConflictFolder     => NodeType(n)
       case n: ISPObsQaLog           => NodeType(n)
       case n: ISPObsExecLog         => NodeType(n)
+      case n: ISPSequence           => NodeType(n)
     }
 
   def forComponentType(ct: SPComponentType): Option[NodeType[_ <: ISPNode]] = {

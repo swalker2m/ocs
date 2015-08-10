@@ -137,6 +137,20 @@ public class MemFactory extends SPAbstractFactory {
         return tp;
     }
 
+    public ISPSequence createSequence(ISPProgram prog, SPNodeKey key)
+            throws SPUnknownIDException {
+        final MemSequence s = new MemSequence((MemProgram) prog, key);
+        if (_sequenceInit != null) _sequenceInit.initNode(this, s);
+        return s;
+    }
+
+    public ISPSequence createSequenceCopy(ISPProgram prog, ISPSequence that, boolean preserveKeys)
+            throws SPUnknownIDException {
+        final MemSequence s = new MemSequence((MemProgram) prog, that, preserveKeys);
+        if (_sequenceInit != null) _sequenceInit.updateNode(s);
+        return s;
+    }
+
     /**
      * Creates an <code>ISPObservation</code>.
      */

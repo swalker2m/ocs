@@ -37,6 +37,7 @@ public abstract class SPAbstractFactory implements ISPFactory {
     protected ISPNodeInitializer _templateGroupInit;
     protected ISPNodeInitializer _templateParametersInit;
     protected ISPNodeInitializer _groupInit;
+    protected ISPNodeInitializer _sequenceInit;
     protected Map<SPComponentType, ISPNodeInitializer> _obsCompInitMap;
     protected Map<SPComponentType, ISPNodeInitializer> _sequenceCompInitMap;
 
@@ -342,5 +343,10 @@ public abstract class SPAbstractFactory implements ISPFactory {
      * created by the factory, a client can use this method.
      */
     public abstract List<SPComponentType> getCreatableSeqComponents();
+
+    @Override
+    public void registerSequenceInit(ISPNodeInitializer init)  {
+        _sequenceInit = init;
+    }
 }
 

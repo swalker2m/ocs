@@ -124,6 +124,10 @@ public final class ReadableNodeName {
                 }
             }
         }
+
+        @Override public void visitSequence(ISPSequence node) {
+            result = "Sequence";
+        }
     }
 
     public static String format(ISPNode node) {

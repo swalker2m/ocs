@@ -95,6 +95,8 @@ public enum SPComponentType implements Serializable {
 
     SCHEDULING_CONDITIONS(SCHEDULING, "conditions", "Observing Conditions"),
 
+    SEQUENCE_NODE(SEQUENCE, "sequence", "Sequence"),
+
     TELESCOPE_TARGETENV(TELESCOPE, "targetEnv", "Targets"),
 
     TEMPLATE_FOLDER(TEMPLATE, "Folder", "Template Folder"),

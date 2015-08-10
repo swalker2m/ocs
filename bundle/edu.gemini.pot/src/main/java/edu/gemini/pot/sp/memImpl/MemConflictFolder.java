@@ -110,6 +110,14 @@ public final class MemConflictFolder extends MemAbstractContainer implements ISP
                 throw new RuntimeException(e);
             }
         }
+
+        @Override public void visitSequence(ISPSequence node) {
+            try {
+                copy = fact.createSequenceCopy(prog, node, preserveKeys);
+            } catch (SPUnknownIDException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private final MemProgram program;

@@ -61,6 +61,7 @@ public final class SPNodeInitializerConfigReader {
     public static final String GROUP_KEY = "group";
 
     public static final String CONFLICT_FOLDER_KEY = "conflictFolder";
+    public static final String SEQUENCE_KEY        = "sequence";
     public static final String TEMPLATE_FOLDER_KEY = "templateFolder";
     public static final String TEMPLATE_GROUP_KEY  = "templateGroup";
     public static final String TEMPLATE_PARAMETERS_KEY  = "templateParameters";
@@ -140,6 +141,8 @@ public final class SPNodeInitializerConfigReader {
                 fact.registerGroupInit(ni);
             } else if (key.equals(CONFLICT_FOLDER_KEY)) {
                 fact.registerConflictFolderInit(ni);
+            } else if (key.equals(SEQUENCE_KEY)) {
+                fact.registerSequenceInit(ni);
             } else if (key.equals(TEMPLATE_FOLDER_KEY)) {
                 fact.registerTemplateFolderInit(ni);
             } else if (key.equals(TEMPLATE_GROUP_KEY)) {

@@ -162,6 +162,7 @@ public final class PioDocumentBuilder {
         if (node instanceof ISPObsExecLog) return SpIOTags.OBS_EXEC_LOG;
         if (node instanceof ISPObsComponent) return SpIOTags.OBSCOMP;
         if (node instanceof ISPSeqComponent) return SpIOTags.SEQCOMP;
+        if (node instanceof ISPSequence) return SpIOTags.SEQUENCE;
         throw new RuntimeException("unknown node type: " + node.getClass().getName());
     }
 

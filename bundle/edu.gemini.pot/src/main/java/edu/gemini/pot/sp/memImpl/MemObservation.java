@@ -37,6 +37,7 @@ public final class MemObservation extends MemAbstractContainer implements ISPObs
 
     // The root sequence component;
     private MemSeqComponent _sequenceComp;
+    private MemSequence _sequence;
 
     MemObservation(MemProgram prog, int obsNumber, SPNodeKey key) throws SPException {
         super(prog.getDocumentData(), key);
@@ -313,6 +314,41 @@ public final class MemObservation extends MemAbstractContainer implements ISPObs
         }
     }
 
+    public ISPSequence getSequence() {
+        return _sequence;
+    }
+
+    public void setSequence(ISPSequence sequence) throws SPNodeNotLocalException, SPTreeStateException {
+        final MemSequence node = (MemSequence) sequence;
+        if (node == _sequence) return;
+
+        final MemSequence oldSequence = _sequence;
+        getProgramWriteLock();
+        try {
+            updateParentLinks(oldSequence, node);
+            _sequence = node;
+            firePropertyChange(SEQUENCE_PROP, oldSequence, node);
+            fireStructureChange(SEQUENCE_PROP, this, oldSequence, node);
+        } finally {
+            returnProgramWriteLock();
+        }
+    }
+
+    public void removeSequence() {
+        getProgramWriteLock();
+        try {
+            final MemSequence oldValue = _sequence;
+            if (_sequence == null) return;
+
+            _sequence.detachFrom(this);
+            _sequence = null;
+            firePropertyChange(SEQUENCE_PROP, oldValue, null);
+            fireStructureChange(SEQUENCE_PROP, this, oldValue, null);
+        } finally {
+            returnProgramWriteLock();
+        }
+    }
+
     public void accept(ISPProgramVisitor visitor) {
         visitor.visitObservation(this);
     }
@@ -326,8 +362,10 @@ public final class MemObservation extends MemAbstractContainer implements ISPObs
             if (_obsQaLog != null) res.add(_obsQaLog);
             if (_obsExecLog != null) res.add(_obsExecLog);
             ISPSeqComponent seqComp = getSeqComponent();
-            ;
             if (seqComp != null) res.add(seqComp);
+
+            final ISPSequence sequence = getSequence();
+            if (sequence != null) res.add(sequence);
             return res;
         } finally {
             returnProgramReadLock();
@@ -340,6 +378,7 @@ public final class MemObservation extends MemAbstractContainer implements ISPObs
             MemObsQaLog.class,
             MemObsExecLog.class,
             MemSeqComponent.class,
+            MemSequence.class,
     };
 
     protected void setTypedChildren(MemAbstractContainer.TypedChildren tc)
@@ -358,6 +397,7 @@ public final class MemObservation extends MemAbstractContainer implements ISPObs
         setObsQaLog(tc.getOnlyChild(MemObsQaLog.class));
         setObsExecLog(tc.getOnlyChild(MemObsExecLog.class));
         setSeqComponent(tc.getOnlyChild(MemSeqComponent.class));
+        setSequence(tc.getOnlyChild(MemSequence.class));
 
         // Restore the instrument/sequence sync event monitor and guarantee
         // that the components being added are in sync. :-/

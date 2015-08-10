@@ -20,6 +20,7 @@ public enum SPComponentBroadType {
     PLAN("Plan"),
     PROGRAM("Program"),
     SCHEDULING("Scheduling"),
+    SEQUENCE("Sequence"),
     TELESCOPE("Telescope"),
     TEMPLATE("Template"),
     UNKNOWN("unknown")

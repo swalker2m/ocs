@@ -21,6 +21,7 @@ public interface ISPObservation extends ISPObsComponentContainer, ISPContainerNo
      * object delivered when a sequence component is added or removed.
      */
     String SEQ_COMPONENT_PROP = "SeqComponent";
+    String SEQUENCE_PROP      = "Sequence";
 
     /**
      * Gets the observation's number.  Each time an observation is
@@ -92,5 +93,10 @@ public interface ISPObservation extends ISPObsComponentContainer, ISPContainerNo
      * </ul>
      */
     void removeSeqComponent();
+
+    ISPSequence getSequence();
+    void setSequence(ISPSequence sequence)
+            throws SPNodeNotLocalException, SPTreeStateException;
+    void removeSequence();
 }
 

@@ -546,5 +546,47 @@ public interface ISPFactory {
                                     boolean preserveKeys)
             throws SPUnknownIDException;
 
+    /**
+     * Creates an ISPSequence using the default initializer for sequences
+     * provided one has been registered (see
+     * <code>{@link #registerSequenceInit}</code>).
+     *
+     * @param prog the program with which this sequence should be associated
+     *
+     * @param key key to use for this node (if <code>null</code> a new key will
+     *            be assigned)
+     *
+     * @throws SPUnknownIDException if the given <code>progKey</code> refers
+     * to a program that is not known by this factory
+     */
+    ISPSequence createSequence(ISPProgram prog, SPNodeKey key)
+            throws SPUnknownIDException;
+
+
+    /**
+     * Creates an ISPSequence that is a deep copy of the given
+     * <code>parameters</code>.
+     *
+     * @param prog the program with which this sequence should be associated
+     *
+     * @param sequence the sequence to copy
+     *
+     * @param preserveKeys whether the copied sequence will have unique keys
+     * or will copy the keys of the source <code>sequence</code>
+     *
+     * @throws SPUnknownIDException if the given <code>progKey</code> refers
+     * to a program that is not known by this factory
+     */
+    ISPSequence createSequenceCopy(ISPProgram prog, ISPSequence sequence,
+                               boolean preserveKeys)
+            throws SPUnknownIDException;
+
+    /**
+     * Sets the default initializer to use when creating a new sequence.
+     *
+     * @param init the <code>ISPNodeInitializer</code> to use when initializing
+     * a newly created parameters
+     */
+    void registerSequenceInit(ISPNodeInitializer init);
 }
 

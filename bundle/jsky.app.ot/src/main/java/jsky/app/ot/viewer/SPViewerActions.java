@@ -53,6 +53,7 @@ public final class SPViewerActions {
     public final AbstractViewerAction templateSplitAction;
     public final AbstractViewerAction templateRegenAction;
     public final AbstractViewerAction enqueueAction;
+    public final AbstractViewerAction addSeqCompAction;
     public final AbstractViewerAction addSequenceAction;
     public final AbstractViewerAction addSchedulingGroupAction;
     public final AbstractViewerAction addOrganizationalFolderAction;
@@ -198,7 +199,8 @@ public final class SPViewerActions {
         showElevationPlotAction = new ShowElevationPlotAction(viewer);
 //        enqueueAction = new EnqueueAction(viewer);
         enqueueAction = new SyncAndEnqueueAction(viewer);
-        addSequenceAction = new AddSeqCompAction(viewer, SeqBase.SP_TYPE);
+        addSeqCompAction = new AddSeqCompAction(viewer, SeqBase.SP_TYPE);
+        addSequenceAction = new AddSequenceAction(viewer);
 
         // Observation Actions - Adding Instrument Components
         for (UIInfo uiInfo : UIInfoXML.getByType(UIInfo.TYPE_INSTRUMENT))

@@ -183,7 +183,7 @@ public class SPTreeToolBar extends GenericToolBar {
     protected JButton makeIterCompMenuButton() {
         if (_iterCompMenuButton == null) {
             JPopupMenu menu = new JPopupMenu();
-            menu.add(new JMenuItem(_viewer._actions.addSequenceAction));
+            menu.add(new JMenuItem(_viewer._actions.addSeqCompAction));
             menu.addSeparator();
             for (AbstractAction action : _viewer._actions.addInstrumentIteratorActions) {
                 menu.add(new JMenuItem(action));

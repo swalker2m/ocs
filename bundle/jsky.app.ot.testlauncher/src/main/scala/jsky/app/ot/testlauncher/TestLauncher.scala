@@ -4,6 +4,7 @@ import edu.gemini.ags.conf.ProbeLimitsTable
 import edu.gemini.qv.plugin.{QvTool, ShowQvToolAction}
 import edu.gemini.sp.vcs2.{VcsServer, Vcs}
 import jsky.app.ot.gemini.obscat.OTBrowserPresetsPersistence
+import jsky.app.ot.editor.sequence.SequenceEditor
 import jsky.app.ot.vcs.VcsOtClient
 import jsky.app.ot.viewer.plugin.PluginRegistry
 
@@ -31,6 +32,7 @@ object TestLauncher extends App {
   val odb   = DBLocalDatabase.create(new File(dir, "spdb")) <| SPDB.init
 
   // Irritation, then open the OT
+  SequenceEditor.NewSequenceSupport = true
   AuthDialog.showDatabaseTab = true
   SkycatConfigFile.setConfigFile(classOf[SkycatConfigFile].getResource("/jsky/catalog/osgi/skycat.cfg"))
   ViewerService.instance = Some(new ViewerService(odb, reg))

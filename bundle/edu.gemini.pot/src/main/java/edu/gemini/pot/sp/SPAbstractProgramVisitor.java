@@ -40,4 +40,7 @@ public abstract class SPAbstractProgramVisitor implements ISPProgramVisitor {
 
     public void visitTemplateParameters(ISPTemplateParameters node) {
     }
+
+    public void visitSequence(ISPSequence node) {
+    }
 }

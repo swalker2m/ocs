@@ -9,6 +9,7 @@ object ObsConstraint {
     .addNarrow[ISPSeqComponent](ITERATOR_BASE)
     .addNarrow[ISPObsQaLog](OBS_QA_LOG)
     .addNarrow[ISPObsExecLog](OBS_EXEC_LOG)
+    .addNarrow[ISPSequence](SEQUENCE_NODE)
     .addBroad[ISPObsComponent](INSTRUMENT, ENGINEERING, AO, SCHEDULING, TELESCOPE, INFO),
     None)
 }
@@ -21,7 +22,7 @@ case class ObsConstraint private(types: Types, inst: Option[SPComponentType]) ex
 
   // These broad types can occur only once, so remove them from `ts` when we encounter them.
   override val uniqueNarrowTypes = super.uniqueNarrowTypes ++ Set(ITERATOR_BASE, OBS_QA_LOG, OBS_EXEC_LOG)
-  override val uniqueBroadTypes  = Set(INSTRUMENT, ENGINEERING, AO, SCHEDULING, TELESCOPE)
+  override val uniqueBroadTypes  = Set(INSTRUMENT, ENGINEERING, AO, SCHEDULING, SEQUENCE, TELESCOPE)
   override val requiredTypes     = Set(OBS_EXEC_LOG, OBS_QA_LOG, ITERATOR_BASE)
 
   def copy(ts: Types) = new ObsConstraint(ts, inst)

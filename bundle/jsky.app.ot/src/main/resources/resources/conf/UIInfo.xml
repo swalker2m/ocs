@@ -457,6 +457,14 @@
     -->
 
     <UIInfo
+            dataObject="edu.gemini.spModel.sequence.sp.SequenceDO"
+            name="New Sequence"
+            type="sequence"
+            imageKey="eclipse/sequence.gif"
+            shortDescription="New sequence prototyping."
+            uiClassName="jsky.app.ot.editor.sequence.SequenceEditor"/>
+
+    <UIInfo
             dataObject="edu.gemini.spModel.seqcomp.SeqBase"
             name="Base Sequence Component"
             type="seqBase"
