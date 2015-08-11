@@ -3,7 +3,7 @@ package edu.gemini.spModel.sequence
 import edu.gemini.spModel.core.AngleSyntax._
 import edu.gemini.spModel.core.{OffsetQ, OffsetP, Offset}
 import edu.gemini.spModel.sequence.Metadata.Access.Science
-import edu.gemini.spModel.sequence.Metadata.Attrs
+import edu.gemini.spModel.sequence.Metadata.{Attrs, Label}
 import edu.gemini.spModel.sequence.Metadata.Scope.SingleStep
 
 import scalaz._
@@ -14,13 +14,17 @@ final case class Telescope(p: OffsetP, q: OffsetQ) {
 }
 
 object Telescope {
+  val Lab = Label("Telescope")
+
+  def lab(name: String): Label = Label(Lab, name)
+
   object OffsetPProp extends Prop[Telescope] {
     type B = OffsetP
     val eq: Equal[OffsetP]         = Equal[OffsetP]
     val lens: Telescope @> OffsetP = Lens.lensu((a, b) => a.copy(p = b), _.p)
 
     val meta = new TextMetadata[OffsetP](
-      Attrs("p", "p", Science, SingleStep),
+      Attrs(lab("p"), Science, SingleStep),
       Some("arcsec"),
       p => f"${p.arcsecs}%4.03f",
       doubleParser("Offset p", _)(_.arcsecs[OffsetP])
@@ -33,7 +37,7 @@ object Telescope {
     val lens: Telescope @> OffsetQ = Lens.lensu((a, b) => a.copy(q = b), _.q)
 
     val meta = new TextMetadata[OffsetQ](
-      Attrs("q", "q", Science, SingleStep),
+      Attrs(lab("q"), Science, SingleStep),
       Some("arcsec"),
       q => f"${q.arcsecs}%4.03f",
       doubleParser("Offset q", _)(_.arcsecs[OffsetQ])

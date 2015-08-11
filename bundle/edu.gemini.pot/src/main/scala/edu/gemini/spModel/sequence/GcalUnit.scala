@@ -2,7 +2,7 @@ package edu.gemini.spModel.sequence
 
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.{Lamp, Shutter}
 import edu.gemini.spModel.sequence.Metadata.Access.Science
-import edu.gemini.spModel.sequence.Metadata.Attrs
+import edu.gemini.spModel.sequence.Metadata.{Attrs, Label}
 import edu.gemini.spModel.sequence.Metadata.Scope.SingleStep
 
 import scalaz._, Scalaz._
@@ -12,12 +12,16 @@ case class GcalUnit(lamp: Lamp, shutter: Shutter)
 object GcalUnit {
   import EnumMetadata.fromJava
 
+  val Lab = Label("GCal Unit")
+
+  def lab(name: String): Label = Label(Lab, name)
+
   object LampProp extends Prop[GcalUnit] {
     type B = Lamp
     val eq: Equal[Lamp]    = Equal.equalA
     val lens: GcalUnit @> Lamp = Lens.lensu((a,b) => a.copy(lamp = b), _.lamp)
 
-    val meta = fromJava(Attrs("lamp", "Lamp", Science, SingleStep), classOf[Lamp])
+    val meta = fromJava(Attrs(lab("Lamp"), Science, SingleStep), classOf[Lamp])
   }
 
 
@@ -26,7 +30,7 @@ object GcalUnit {
     val eq: Equal[Shutter]    = Equal.equalA
     val lens: GcalUnit @> Shutter = Lens.lensu((a,b) => a.copy(shutter = b), _.shutter)
 
-    val meta = fromJava(Attrs("shutter", "Shutter", Science, SingleStep), classOf[Shutter])
+    val meta = fromJava(Attrs(lab("Shutter"), Science, SingleStep), classOf[Shutter])
   }
 
   implicit val DescribeGcal: Describe[GcalUnit] =

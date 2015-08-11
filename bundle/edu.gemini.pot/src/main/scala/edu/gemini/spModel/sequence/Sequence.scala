@@ -66,6 +66,11 @@ object Sequence {
     }
   }
 
+  /** Creates an initial sequence with a single science step containing default
+    * parameter values. */
+  def initScience[I: Describe]: Sequence[I] =
+    fromSteps(implicitly[Describe[ScienceStep[I]]].default.wrapNel)
+
   /** Creates a sequence from a non-empty list of steps. */
   def fromSteps[I: Describe](steps: NonEmptyList[Step[I]]): Sequence[I] = {
     def toSer[S](stepType: Step.Type, steps: NonEmptyList[S], props: List[Prop[S]])(implicit ev: ClassTag[S]): SerSteps = {

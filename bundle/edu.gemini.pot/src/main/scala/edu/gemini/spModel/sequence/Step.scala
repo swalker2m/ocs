@@ -1,7 +1,7 @@
 package edu.gemini.spModel.sequence
 
 import Metadata.Access._
-import Metadata.Attrs
+import edu.gemini.spModel.sequence.Metadata.{Label, Attrs}
 import Metadata.Scope._
 
 import scalaz._, Scalaz._
@@ -30,7 +30,7 @@ object Step {
       val props  = implicitly[Describe[A]].props
       val values = props.map { p =>
         val b = p.lens.get(a)
-        s"${p.meta.attrs.name} = ${p.meta.show(b)}"
+        s"${p.meta.attrs.label.name} = ${p.meta.show(b)}"
       }
 
       values.mkString(name + " {", ", ", "}")
@@ -109,6 +109,8 @@ object SmartStep {
     val All = NonEmptyList(Arc, Flat, DayBaseline, NightBaseline)
   }
 
+  val Lab = Label("Smart")
+
   implicit def describeSmartStep[I: Describe]: Describe[SmartStep[I]] = {
     object TypeProp extends Prop[SmartStep[I]] {
       type B = Type
@@ -116,7 +118,7 @@ object SmartStep {
 
       def lens: SmartStep[I] @> Type = Lens.lensu((a, b) => a.copy(smartStepType = b), _.smartStepType)
 
-      val meta = EnumMetadata[Type](Attrs("type", "Step Type", Science, SingleStep), Type.All)
+      val meta = EnumMetadata[Type](Attrs(Label(Lab, "Step Type"), Science, SingleStep), Type.All)
     }
 
     val inst: SmartStep[I] @> I = Lens.lensu((a, b) => a.copy(instrument = b), _.instrument)
