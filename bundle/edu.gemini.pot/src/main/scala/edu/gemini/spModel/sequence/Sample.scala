@@ -40,12 +40,12 @@ object Sample extends App {
     ScienceStep( f2_J, nod_B),
     ScienceStep( f2_J, nod_B),
     ScienceStep( f2_J, nod_A),
-    SmartStep(   f2_J, SmartStep.Type.Flat),
+    SmartStep(   f2_J, SmartCal(SmartCal.Type.Arc)),
     ScienceStep( f2_H, nod_A),
     ScienceStep( f2_H, nod_B),
     ScienceStep( f2_H, nod_B),
     ScienceStep( f2_H, nod_A),
-    SmartStep(   f2_H, SmartStep.Type.Flat)
+    SmartStep(   f2_H, SmartCal(SmartCal.Type.Flat))
   )
 
   val seq = Sequence.fromSteps(steps)

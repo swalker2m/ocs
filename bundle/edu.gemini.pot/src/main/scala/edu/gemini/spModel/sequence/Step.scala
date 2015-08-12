@@ -1,9 +1,5 @@
 package edu.gemini.spModel.sequence
 
-import Metadata.Access._
-import edu.gemini.spModel.sequence.Metadata.{Label, Attrs}
-import Metadata.Scope._
-
 import scalaz._, Scalaz._
 
 sealed trait Step[I] {
@@ -37,10 +33,10 @@ object Step {
     }
 
     Show.shows[Step[I]] {
-      case BiasStep(i)       => "Bias: " + showVals("inst", i)
-      case DarkStep(i)       => "Dark: " + showVals("inst", i)
-      case GcalStep(i, g)    => "Gcal: " + showVals("inst", i) + " " + showVals("gcal", g)
-      case ScienceStep(i, t) => "Science: " + showVals("inst", i) + " " + showVals("telescope", t)
+      case BiasStep(i)       => "Bias: "      + showVals("inst", i)
+      case DarkStep(i)       => "Dark: "      + showVals("inst", i)
+      case GcalStep(i, g)    => "Gcal: "      + showVals("inst", i) + " " + showVals("gcal", g)
+      case ScienceStep(i, t) => "Science: "   + showVals("inst", i) + " " + showVals("telescope", t)
       case SmartStep(i, t)   => s"Smart $t: " + showVals("inst", i)
     }
   }
@@ -94,41 +90,14 @@ object ScienceStep {
     )
 }
 
-final case class SmartStep[I](instrument: I, smartStepType: SmartStep.Type) extends Step[I] {
+final case class SmartStep[I](instrument: I, smartCal: SmartCal) extends Step[I] {
   def stepType = Step.Smart
 }
 
 object SmartStep {
-  sealed trait Type
-  object Type {
-    case object Arc           extends Type
-    case object Flat          extends Type
-    case object DayBaseline   extends Type
-    case object NightBaseline extends Type
-
-    val All = NonEmptyList(Arc, Flat, DayBaseline, NightBaseline)
-  }
-
-  val Lab = Label("Smart")
-
-  implicit def describeSmartStep[I: Describe]: Describe[SmartStep[I]] = {
-    object TypeProp extends Prop[SmartStep[I]] {
-      type B = Type
-      val eq: Equal[Type] = Equal.equalA
-
-      def lens: SmartStep[I] @> Type = Lens.lensu((a, b) => a.copy(smartStepType = b), _.smartStepType)
-
-      val meta = EnumMetadata[Type](Attrs(Label(Lab, "Step Type"), Science, SingleStep), Type.All)
-    }
-
-    val inst: SmartStep[I] @> I = Lens.lensu((a, b) => a.copy(instrument = b), _.instrument)
-
-    new Describe[SmartStep[I]] {
-      val default: SmartStep[I] =
-        SmartStep(implicitly[Describe[I]].default, SmartStep.Type.Arc)
-
-      val props: List[Prop[SmartStep[I]]] =
-        TypeProp :: implicitly[Describe[I]].props.map(_ compose inst)
-    }
-  }
+  implicit def describeSmartStep[I: Describe]: Describe[SmartStep[I]] =
+    Describe[(I, SmartCal)].xmap[SmartStep[I]](
+      t => SmartStep(t._1, t._2),
+      s => (s.instrument, s.smartCal)
+    )
 }
