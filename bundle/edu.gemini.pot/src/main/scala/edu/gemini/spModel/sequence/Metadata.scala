@@ -23,7 +23,12 @@ object Metadata {
     implicit val ShowLabel: Show[Label] = Show.shows { l =>
       l.parent.fold(l.name)(p => s"${p.shows} / ${l.name}")
     }
+
+    implicit val OrderLabel: Order[Label] = Order[String].contramap(_.shows)
+
+    implicit val OrderingLabel: scala.Ordering[Label] = OrderLabel.toScalaOrdering
   }
+
 
   sealed trait Access
   object Access {

@@ -40,6 +40,32 @@ object Step {
       case SmartStep(i, t)   => s"Smart $t: " + showVals("inst", i)
     }
   }
+
+  def instrument[I]: Step[I] @?> I = PLens.plensgf({
+      case BiasStep(_)               => (i: I) => BiasStep(i)
+      case DarkStep(_)               => (i: I) => DarkStep(i)
+      case GcalStep(_, gcal)         => (i: I) => GcalStep(i, gcal)
+      case ScienceStep(_, telescope) => (i: I) => ScienceStep(i, telescope)
+      case SmartStep(_, smart)       => (i: I) => SmartStep(i, smart)
+    }, {
+      case BiasStep(i)       => i
+      case DarkStep(i)       => i
+      case GcalStep(i, _)    => i
+      case ScienceStep(i, _) => i
+      case SmartStep(i, _)   => i
+    })
+
+  def gcal[I]: Step[I] @?> GcalUnit = PLens.plensgf({
+      case GcalStep(inst, _) => (g: GcalUnit) => GcalStep(inst, g)
+    }, { case GcalStep(_, g) => g })
+
+  def telescope[I]: Step[I] @?> Telescope = PLens.plensgf({
+      case ScienceStep(inst,_) => (t: Telescope) => ScienceStep(inst, t)
+    }, { case ScienceStep(_, t) => t })
+
+  def smartCal[I]: Step[I] @?> SmartCal = PLens.plensgf({
+      case SmartStep(inst,_) => (s: SmartCal) => SmartStep(inst, s)
+    }, { case SmartStep(_, s) => s})
 }
 
 final case class BiasStep[I](instrument: I) extends Step[I] {
