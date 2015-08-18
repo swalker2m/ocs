@@ -43,7 +43,7 @@ object SequenceEditor {
         gridx  = col
         gridy  = row
         anchor = Anchor.East
-        insets = new Insets(5, 10, 0, 5)
+        insets = new Insets(5, if (col == 0) 10 else 20, 0, 5)
       }
       pan.layout(ed.component) = new pan.Constraints {
         gridx  = col + 1
@@ -65,7 +65,7 @@ object SequenceEditor {
 
 class SequenceEditor extends OtItemEditor[ISPSequence, SequenceDO] {
 
-  import jsky.app.ot.editor.sequence.SequenceEditor.{Row, PropRow, TitleRow}
+  import jsky.app.ot.editor.sequence.SequenceEditor.{PropRow, TitleRow}
 
   val pan = new GridBagPanel {
     border = BorderFactory.createCompoundBorder(
