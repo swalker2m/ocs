@@ -88,7 +88,10 @@ final class PropSheet(is: Option[InstrumentSequence], selected: Set[Int], commit
 
       val edRows = grp.stepLenses.map { sLens =>
         val pb = sLens.getCommon(steps)
-        editor(sLens)(pb, (newPb: sLens.prop.B) => commit(ctor(sLens.setAll(seq, selected, newPb))))
+        editor(sLens)(pb, (newPb: sLens.prop.B) => {
+          val curPb = sLens.getAll(seq, selected)
+          if (newPb != curPb) commit(ctor(sLens.setAll(seq, selected, newPb)))
+        })
       }
 
       val (col0, col1) = edRows.splitAt(splitPos(edRows))

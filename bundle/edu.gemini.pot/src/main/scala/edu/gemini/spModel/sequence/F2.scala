@@ -57,7 +57,7 @@ object F2 {
     val meta = TextMetadata[Duration](
       Attrs(lab("Exposure Time"), Science, SingleStep),
       Some("sec"),
-      et => f"${et.toMillis/1000.0}%4.01f",
+      et => f"${et.toMillis/1000.0}%3.01f",
       doubleParser("Exposure Time", _)(d => Duration.ofMillis(math.round(d * 1000)))
     )
   }
