@@ -7,6 +7,12 @@ import scalaz._
 final case class StepLens[A: Describe, I: Describe](prop: Prop[A], aLens: Step[I] @?> A) {
   val lens: Step[I] @?> prop.B = aLens >=> prop.lens.partial
 
+  private def collectSteps[B](seq: Sequence[I], selected: Set[Int])(f: (Step[I], Int) => B): List[B] =
+    seq.toSteps.list.zipWithIndex.collect { case (step, i) if selected(i) => f(step, i) }
+
+  private def selectedSteps(seq: Sequence[I], selected: Set[Int]): List[Step[I]] =
+    collectSteps(seq, selected)((step, _) => step)
+
   /** Gets all values, one per provided step. If the step type doesn't support
     * the property, the corresponding list element will be None. */
   def getAll(ss: List[Step[I]]): List[Option[prop.B]] =
@@ -16,9 +22,7 @@ final case class StepLens[A: Describe, I: Describe](prop: Prop[A], aLens: Step[I
     getAll(seq.toSteps.list)
 
   def getAll(seq: Sequence[I], selected: Set[Int]): List[(Option[prop.B], Int)] =
-    seq.toSteps.list.zipWithIndex.collect { case (step, i) if selected(i) =>
-      (lens.get(step), i)
-    }
+    collectSteps(seq, selected) { (step, i) => (lens.get(step), i) }
 
   /** The common value if it is the same across all steps that support the
     * property. If two or more property supporting steps have different values
@@ -33,7 +37,18 @@ final case class StepLens[A: Describe, I: Describe](prop: Prop[A], aLens: Step[I
     getCommon(seq.toSteps.list)
 
   def getCommon(seq: Sequence[I], selected: Set[Int]): Option[prop.B] =
-    getCommon(seq.toSteps.list.zipWithIndex.collect { case (step, i) if selected(i) => step })
+    getCommon(selectedSteps(seq, selected))
+
+  def hasCommon(ss: List[Step[I]]): Boolean = {
+    val lst = getAll(ss).dropWhile(_.isEmpty)
+    lst.headOption.flatten.exists(v => lst.forall(_.forall(_ == v)))
+  }
+
+  def hasCommon(seq: Sequence[I]): Boolean =
+    hasCommon(seq.toSteps.list)
+
+  def hasCommon(seq: Sequence[I], selected: Set[Int]): Boolean =
+    hasCommon(selectedSteps(seq, selected))
 
   /** Sets the property value for all step types that support the property,
     * leaving those that do not unchanged. */

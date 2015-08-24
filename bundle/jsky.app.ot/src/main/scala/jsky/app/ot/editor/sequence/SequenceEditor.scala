@@ -2,13 +2,17 @@ package jsky.app.ot.editor.sequence
 
 import edu.gemini.pot.sp.{SPNodeKey, ISPSequence}
 import edu.gemini.spModel.rich.pot.sp.SpNodeKeyEqual
-import edu.gemini.spModel.sequence.InstrumentSequence
+import edu.gemini.spModel.sequence.{Describe, F2, Sequence, F2Sequence, InstrumentSequence}
 import edu.gemini.spModel.sequence.sp.SequenceDO
 
 import jsky.app.ot.editor.OtItemEditor
 
-import javax.swing.JPanel
-import scala.swing.BorderPanel
+import javax.swing.{JTable, JPanel}
+import javax.swing.table.DefaultTableCellRenderer
+
+import scala.collection.JavaConverters._
+import scala.swing.Table.{LabelRenderer, AbstractRenderer}
+import scala.swing.{Label, Table, ScrollPane, BorderPanel}
 
 import scalaz._
 import Scalaz._
@@ -36,10 +40,41 @@ class SequenceEditor extends OtItemEditor[ISPSequence, SequenceDO] {
         apply()
       }
 
-    val ps = new PropSheet(getDataObject.seq, Set(0), commit)
+    def init[I: Describe](s: Sequence[I], construct: Sequence[I] => InstrumentSequence): Unit = {
+      pan.layout.clear()
 
-    pan.layout.clear()
-    pan.layout(ps) = BorderPanel.Position.South
+      object optionRenderer extends Label {
+        def prepare(o: AnyRef): Unit =
+          text = o match {
+            case Some(v) => v.toString
+            case None    => ""
+            case _       => o.toString
+          }
+      }
+
+      val tab   = new Table() {
+        override def rendererComponent(sel: Boolean, foc: Boolean, row: Int, col: Int) = {
+          val v = model.getValueAt(peer.convertRowIndexToModel(row),
+                                   peer.convertColumnIndexToModel(col))
+
+          optionRenderer.prepare(v)
+          optionRenderer
+        }
+      }
+      tab.model = new SequenceTableModel(s)
+
+      val sp    = new ScrollPane(tab)
+      pan.layout(sp) = BorderPanel.Position.Center
+
+      val ps = new PropSheet(s, Set(0), construct, commit)
+      pan.layout(ps) = BorderPanel.Position.South
+    }
+
+
+    getDataObject.seq.foreach {
+      case F2Sequence(s) => init(s, (s: Sequence[F2]) => F2Sequence(s))
+      case _             => // do nothing
+    }
   }
 
   override def getWindow: JPanel = pan.peer

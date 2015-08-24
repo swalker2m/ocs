@@ -13,15 +13,17 @@ import scala.swing.event.{ValueChanged, ActionEvent, SelectionChanged}
 import scalaz._
 import Scalaz._
 
-final class PropSheet(is: Option[InstrumentSequence], selected: Set[Int], commit: InstrumentSequence => Unit) extends GridBagPanel {
+final class PropSheet[I: Describe](
+    seq: Sequence[I],
+    selected: Set[Int],
+    construct: Sequence[I] => InstrumentSequence,
+    commit: InstrumentSequence => Unit) extends GridBagPanel {
+
   border = BorderFactory.createCompoundBorder(
     BorderFactory.createLoweredSoftBevelBorder(),
     BorderFactory.createEmptyBorder(10, 10, 10, 10))
 
-  is.foreach {
-    case F2Sequence(s) => init(s, (s: Sequence[F2]) => F2Sequence(s))
-    case _             => // do nothing
-  }
+  init()
 
   private final case class Title(label: Metadata.Label) {
     def layout(row: Int, col: Int): Unit = {
@@ -63,7 +65,7 @@ final class PropSheet(is: Option[InstrumentSequence], selected: Set[Int], commit
     }
   }
 
-  private def init[I: Describe](seq: Sequence[I], ctor: Sequence[I] => InstrumentSequence): Unit = {
+  private def init(): Unit = {
     val steps  = seq.toSteps.list.zipWithIndex.collect {
       case (step, i) if selected(i) => step
     }
@@ -90,7 +92,7 @@ final class PropSheet(is: Option[InstrumentSequence], selected: Set[Int], commit
         val pb = sLens.getCommon(steps)
         editor(sLens)(pb, (newPb: sLens.prop.B) => {
           val curPb = sLens.getAll(seq, selected)
-          if (newPb != curPb) commit(ctor(sLens.setAll(seq, selected, newPb)))
+          if (newPb != curPb) commit(construct(sLens.setAll(seq, selected, newPb)))
         })
       }
 
@@ -104,7 +106,7 @@ final class PropSheet(is: Option[InstrumentSequence], selected: Set[Int], commit
     }
   }
 
-  private def editor[I: Describe](sLens: StepLens[_,I])(value: Option[sLens.prop.B], set: sLens.prop.B => Unit): Editor = {
+  private def editor(sLens: StepLens[_,I])(value: Option[sLens.prop.B], set: sLens.prop.B => Unit): Editor = {
     val lab = new Label(sLens.prop.meta.attrs.label.name)
 
     sLens.prop.meta match {

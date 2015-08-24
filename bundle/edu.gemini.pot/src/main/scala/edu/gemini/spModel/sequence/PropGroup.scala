@@ -19,6 +19,9 @@ case class PropGroup[A: Describe, I: Describe](aLens: Step[I] @?> A) {
 }
 
 object PropGroup {
+  def groups[I: Describe](seq: Sequence[I]): List[PropGroup[_, I]] =
+    groups(seq.toSteps.list)
+
   def groups[I: Describe](ss: List[Step[I]]): List[PropGroup[_, I]] = {
     val types = (Set.empty[Step.Type]/:ss) { _ + _.stepType }
 
