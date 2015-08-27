@@ -50,10 +50,7 @@ object Sample extends App {
 
   val seq = Sequence.fromSteps(steps)
 
-//  val steps2 = seq.toSteps
   val steps2 = deserialize[Sequence[F2]](serialize(seq)).toSteps
-
-//  steps2.list.foreach(println)
 
   steps2.list.foreach { step =>
     println(step.shows)

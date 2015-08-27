@@ -101,11 +101,11 @@ object Sequence {
       }
 
       remainder.toNel match {
-        case None       => NonEmptyList.nel(ss, res)
+        case None       => NonEmptyList.nel(ss, res).reverse
         case Some(nel2) => go(nel2, ss :: res)
       }
     }
 
-    new Sequence[I](go(steps.reverse, Nil))
+    new Sequence[I](go(steps, Nil))
   }
 }
