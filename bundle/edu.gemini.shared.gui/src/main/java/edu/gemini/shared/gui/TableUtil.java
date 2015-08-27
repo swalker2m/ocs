@@ -177,14 +177,14 @@ public final class TableUtil {
     /**
      * Resets a table's column's widths to be the minimum necessary size to
      * display their content.  (Taken from David Geary's Graphic Java.)
-     * This method relies upon each column having a renderer that acurately
+     * This method relies upon each column having a renderer that accurately
      * reports the column's preferred width.
      */
-    public static void minimizeColumnWidths(JTable table) {
-        Enumeration enm = table.getColumnModel().getColumns();
+    public static void minimizeColumnWidths(JTable table, int padding) {
+        final Enumeration enm = table.getColumnModel().getColumns();
         while (enm.hasMoreElements()) {
-            TableColumn col = (TableColumn) enm.nextElement();
-            int prefWidth = getPreferredWidthForColumn(table, col);
+            final TableColumn col = (TableColumn) enm.nextElement();
+            final int prefWidth   = getPreferredWidthForColumn(table, col) + padding;
             col.setMinWidth(prefWidth);
             col.setPreferredWidth(prefWidth);
             //col.setMaxWidth(prefWidth);
@@ -210,11 +210,12 @@ public final class TableUtil {
     }
 
     public static int getWidestCellWidth(JTable table, TableColumn col) {
-        int c = col.getModelIndex(), width = 0, maxw = 0;
+        int maxw = 0;
+        final int c = col.getModelIndex();
         for (int r = 0; r < table.getRowCount(); ++r) {
-            TableCellRenderer rend = table.getCellRenderer(r, c);
-            Component comp = rend.getTableCellRendererComponent(table, table.getValueAt(r, c), false, false, r, c);
-            width = comp.getPreferredSize().width;
+            final TableCellRenderer rend = table.getCellRenderer(r, c);
+            final Component comp = rend.getTableCellRendererComponent(table, table.getValueAt(r, c), false, false, r, c);
+            final int width = comp.getPreferredSize().width;
             maxw = width > maxw ? width : maxw;
         }
         return maxw;

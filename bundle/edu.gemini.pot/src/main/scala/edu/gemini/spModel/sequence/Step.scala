@@ -41,6 +41,23 @@ object Step {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // Partial Lenses: Step[I] @?> A
+  //
+  // The presence or absence of an A for a given step will depend on the step
+  // type.  For example, only Science steps have a Telescope component and only
+  // Gcal steps have a GcalUnit.
+  //
+  // You can compose these with individual property lenses to get partial
+  // lenses for instrument filters, etc.  For example:
+  //
+  //     Step.instrument[F2] >=> F2.FilterProp.lens.partial
+  //
+  // creates a partial lens:
+  //
+  //    Step[F2] @?> F2.FilterProp.B
+  // --------------------------------------------------------------------------
+
   def instrument[I]: Step[I] @?> I = PLens.plensgf({
       case BiasStep(_)               => (i: I) => BiasStep(i)
       case DarkStep(_)               => (i: I) => DarkStep(i)
@@ -68,6 +85,10 @@ object Step {
     }, { case SmartStep(_, s) => s})
 }
 
+// ----------------------------------------------------------------------------
+// Bias
+// ----------------------------------------------------------------------------
+
 final case class BiasStep[I](instrument: I) extends Step[I] {
   def stepType = Step.Bias
 }
@@ -79,6 +100,10 @@ object BiasStep {
       s => s.instrument
     )
 }
+
+// ----------------------------------------------------------------------------
+// Dark
+// ----------------------------------------------------------------------------
 
 final case class DarkStep[I](instrument: I) extends Step[I] {
   def stepType = Step.Dark
@@ -92,6 +117,14 @@ object DarkStep {
     )
 }
 
+// ----------------------------------------------------------------------------
+// Gcal
+//
+// Gcal steps are used for manual Gcal calibrations and to store the smart
+// Gcal expansion once a smart calibration step begins executing.  In other
+// words "smart" steps turn into ordinary manual Gcal steps when executed.
+// ----------------------------------------------------------------------------
+
 final case class GcalStep[I](instrument: I, gcal: GcalUnit) extends Step[I] {
   def stepType = Step.Gcal
 }
@@ -104,6 +137,10 @@ object GcalStep {
     )
 }
 
+// ----------------------------------------------------------------------------
+// Science
+// ----------------------------------------------------------------------------
+
 final case class ScienceStep[I](instrument: I, telescope: Telescope) extends Step[I] {
   def stepType = Step.Science
 }
@@ -115,6 +152,14 @@ object ScienceStep {
       s => (s.instrument, s.telescope)
     )
 }
+
+// ----------------------------------------------------------------------------
+// Smart
+//
+// Smart calibration steps just indicate what type of calibration is desired:
+// arc, flat, baseline night, baseline day.  When executed the corresponding
+// Gcal step is substituted in for the smart step.
+// ----------------------------------------------------------------------------
 
 final case class SmartStep[I](instrument: I, smartCal: SmartCal) extends Step[I] {
   def stepType = Step.Smart
