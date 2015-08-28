@@ -38,3 +38,7 @@ trait Prop[A] { self =>
       val meta = self.meta
     }
 }
+
+object Prop {
+  type Aux[A, B0] = Prop[A] { type B = B0 }
+}

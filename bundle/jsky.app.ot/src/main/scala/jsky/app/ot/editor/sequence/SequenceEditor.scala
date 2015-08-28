@@ -112,8 +112,12 @@ class SequenceEditor extends OtItemEditor[ISPSequence, SequenceDO] {
 
       object optionRenderer extends Label {
         def prepare(stm: SequenceTableModel[I], c: Int, a: Any): Unit = {
-          text   = stm.format(c, a)
-          border = BorderFactory.createEmptyBorder(0, 2, 0, 2)
+          text   = a match {
+            case Some(v) => stm.columns(c).format(v)
+            case _       => ""
+          }
+          border     = BorderFactory.createEmptyBorder(0, 2, 0, 2)
+          opaque     = true
         }
       }
 
@@ -125,13 +129,13 @@ class SequenceEditor extends OtItemEditor[ISPSequence, SequenceDO] {
           val stm = model.asInstanceOf[SequenceTableModel[I]]
 
           val comp = (col, v) match {
-            case (0, Some(step: Int)) => new StepPanel(step)
+            case (0, Some(step: Int)) => new StepPanel(step - 1)
             case _                    => optionRenderer.prepare(stm, col, v)
                                          optionRenderer
           }
 
           comp.opaque     = true
-          comp.background = if (sel) selectionBackground else background
+          comp.background = if (sel) selectionBackground else stm.columns(col).color
           comp
         }
 
