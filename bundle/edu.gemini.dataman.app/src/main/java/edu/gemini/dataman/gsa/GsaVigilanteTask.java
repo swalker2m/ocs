@@ -8,8 +8,8 @@ import edu.gemini.dataman.context.DatamanContext;
 import edu.gemini.dataman.update.RecordUpdateCommand;
 import edu.gemini.dataman.util.DatamanFileUtil;
 import edu.gemini.dataman.util.DatasetCommandProcessor;
-import edu.gemini.dataman.xfer.XferService;
 import edu.gemini.pot.spdb.IDBDatabaseService;
+import edu.gemini.spModel.dataflow.GsaAspect;
 import edu.gemini.spModel.dataset.DatasetLabel;
 import edu.gemini.spModel.dataset.GsaState;
 
@@ -19,6 +19,7 @@ import java.security.Principal;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * A TimerTask that scans the database looking for datasets that have a
@@ -166,14 +167,16 @@ final class GsaVigilanteTask extends TimerTask {
                 // to copy again.
                 LOG.log(LEVEL, "GsaVigilante: pending file missing " + filename);
                 updateGsaState(pendingFile, curState, GsaState.NONE, Level.INFO);
-            } else if (!XferService.shouldXferToGsa(label)) {
+            } else if (!GsaAspect.isSendToGsa(label)) {
                 // Remove the PENDING state of datasets that shouldn't be sent
                 // to the GSA.  This shouldn't happen ....
                 LOG.log(LEVEL, "GsaVigilante: pending file is not GSA eligible " + filename);
                 updateGsaState(pendingFile, curState, GsaState.NONE, Level.INFO);
-            } else {
-                LOG.log(LEVEL, "GsaVigilante: schedule copy " + filename);
-                XferService.xferToGsa(_ctx, label, f);
+
+                // NEW ARCHIVE: no explicit transfers
+//            } else {
+//                LOG.log(LEVEL, "GsaVigilante: schedule copy " + filename);
+//                XferService.xferToGsa(_ctx, label, f);
             }
         }
 
@@ -186,7 +189,7 @@ final class GsaVigilanteTask extends TimerTask {
         Long gsaCrc = status.getCrc();
         if (gsaCrc == null) {
             // can't be accepted without a CRC
-            String msg = String.format("Accepted file missing CRC: " + status.getFilename());
+            final String msg = "Accepted file missing CRC: " + status.getFilename();
             LOG.log(Level.SEVERE, msg);
             throw new RuntimeException(msg);
         }
@@ -212,11 +215,7 @@ final class GsaVigilanteTask extends TimerTask {
         long localCrc;
         try {
             localCrc = DatamanFileUtil.crc(f);
-        } catch (InterruptedException e) {
-            LOG.log(Level.WARNING, e.getMessage(), e);
-            updateGsaState(file, curGsaState, GsaState.TRANSFER_ERROR, Level.WARNING);
-            return;
-        } catch (IOException e) {
+        } catch (InterruptedException | IOException e) {
             LOG.log(Level.WARNING, e.getMessage(), e);
             updateGsaState(file, curGsaState, GsaState.TRANSFER_ERROR, Level.WARNING);
             return;
@@ -290,11 +289,9 @@ final class GsaVigilanteTask extends TimerTask {
     // Gets the collection of all the filenames that were in the collection
     // of interesting files returned from the database.
     private Set<String> getFilenames(Collection<List<GsaDatasetInfo>> infoListCollection) {
-        Set<String> filenames = new HashSet<String>();
+        final Set<String> filenames = new HashSet<>();
         for (List<GsaDatasetInfo> lst : infoListCollection) {
-            for (GsaDatasetInfo info : lst) {
-                filenames.add(info.getFilename());
-            }
+            filenames.addAll(lst.stream().map(GsaDatasetInfo::getFilename).collect(Collectors.toList()));
         }
         return filenames;
     }

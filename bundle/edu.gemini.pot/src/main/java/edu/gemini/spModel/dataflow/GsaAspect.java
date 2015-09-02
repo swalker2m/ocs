@@ -5,6 +5,8 @@
 package edu.gemini.spModel.dataflow;
 
 import edu.gemini.shared.util.immutable.Option;
+import edu.gemini.spModel.core.ProgramType$;
+import edu.gemini.spModel.dataset.DatasetLabel;
 import edu.gemini.spModel.pio.ParamSet;
 import edu.gemini.spModel.pio.Pio;
 import edu.gemini.spModel.pio.PioFactory;
@@ -44,6 +46,14 @@ public class GsaAspect implements Serializable {
         if (type == null) return DEFAULT;
         GsaAspect res = TYPE_MAP.get(type);
         return (res == null) ? DEFAULT : res;
+    }
+
+    public static GsaAspect getDefaultAspect(DatasetLabel label) {
+        return getDefaultAspect(ProgramType$.MODULE$.readOrNull(label.getProgramId()));
+    }
+
+    public static boolean isSendToGsa(DatasetLabel label) {
+        return label != null && getDefaultAspect(label).isSendToGsa();
     }
 
     private boolean _sendToGsa;

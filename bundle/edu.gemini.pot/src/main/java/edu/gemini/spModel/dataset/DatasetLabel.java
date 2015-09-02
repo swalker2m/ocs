@@ -5,6 +5,7 @@ package edu.gemini.spModel.dataset;
 
 import edu.gemini.pot.sp.SPObservationID;
 import edu.gemini.spModel.core.SPBadIDException;
+import edu.gemini.spModel.core.SPProgramID;
 
 import java.io.Serializable;
 import java.text.ParseException;
@@ -138,6 +139,10 @@ public final class DatasetLabel implements Comparable<DatasetLabel>, Serializabl
      */
     public SPObservationID getObservationId() {
         return _observationId;
+    }
+
+    public SPProgramID getProgramId() {
+        return _observationId.getProgramID();
     }
 
     /**

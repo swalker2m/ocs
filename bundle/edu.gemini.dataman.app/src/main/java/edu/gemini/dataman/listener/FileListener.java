@@ -7,9 +7,9 @@ package edu.gemini.dataman.listener;
 import edu.gemini.dataman.context.DatamanContext;
 import edu.gemini.dataman.update.RecordUpdateCommand;
 import edu.gemini.dataman.util.DatamanLoggers;
-import edu.gemini.dataman.xfer.XferService;
 import edu.gemini.datasetfile.*;
 import edu.gemini.datasetrecord.DatasetRecordService;
+import edu.gemini.spModel.core.ProgramType;
 import edu.gemini.spModel.core.ProgramType$;
 import edu.gemini.spModel.core.SPProgramID;
 import edu.gemini.spModel.dataflow.GsaAspect;
@@ -120,39 +120,18 @@ public final class FileListener implements DatasetFileListener {
         boolean isFinalQa = dsetFile.getQaState().isFinal();
         if (dsetFile.getRelease() == null) {
             _updateRelease(dsetFile);
-
-            if (isNew && !isFinalQa) {
-                XferService.initialXferToGsa(_ctx, label, dsetFile.getFile());
-            }
             return;
         }
 
         // Update the dataset record. If now in a final QA state, then
         // transition to GsaState PENDING so that the GsaVigilante will later
         // pick it up and move it to the GSA.
-        GsaState newGsaState =
-                (isFinalQa && XferService.shouldXferToGsa(label)) ? GsaState.PENDING : GsaState.NONE;
+        final GsaState newGsaState = (isFinalQa && GsaAspect.isSendToGsa(label)) ? GsaState.PENDING : GsaState.NONE;
 
-        RecordUpdateCommand cmd = new RecordUpdateCommand(_ctx, dsetFile);
+        final RecordUpdateCommand cmd = new RecordUpdateCommand(_ctx, dsetFile);
         cmd.setGsaState(newGsaState);
         cmd.setDatasetFileState(DatasetFileState.OK);
         cmd.scheduleUpdate();
-
-        // Otherwise, if the file showed up new and yet already had the
-        // RELEASE keyword, we'll get to this point and need to do the initial
-        // transfer.
-        if (isNew && !isFinalQa) {
-            XferService.initialXferToGsa(_ctx, label, dsetFile.getFile());
-        }
-
-        // Send any updated file to the base facility.
-        // NOTE: The check for "isFinalQa" adds the requirement that only QA'ed
-        // datasets are sent to the base facility.  This is likely wrong but
-        // matches the dataman behavior from the initial installation.  A
-        // change to this behavior requires a task request from science.
-        if (isFinalQa) {
-            XferService.xferToBase(_ctx, label, dsetFile.getFile());
-        }
     }
 
     public void badDatasetFound(DatasetFileEvent evt) {
