@@ -13,7 +13,6 @@ import edu.gemini.util.security.principal.StaffPrincipal;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.util.*;
 import java.util.logging.Logger;
@@ -26,7 +25,6 @@ public final class Activator implements BundleActivator {
 
     private OsgiDatamanContext _dmanContext;
     private WorkingStoreTracker _wsTracker;
-    private HttpTracker _httpTracker;
 
     private final Set<Principal> _user = Collections.<Principal>singleton(StaffPrincipal.Gemini());
     private final List<BundleActivator> _delegates = new ArrayList<>();
@@ -39,9 +37,6 @@ public final class Activator implements BundleActivator {
         _delegates.add(new edu.gemini.datasetrecord.osgi.Activator());
         for (BundleActivator ba: _delegates)
             ba.start(ctx);
-
-        _httpTracker = new HttpTracker(ctx);
-        _httpTracker.open();
 
         _dmanContext = new OsgiDatamanContext(ctx, _user);
         _dmanContext.start();
@@ -76,8 +71,5 @@ public final class Activator implements BundleActivator {
 
         _dmanContext.stop();
         _dmanContext = null;
-
-        _httpTracker.close();
-        _httpTracker = null;
     }
 }
