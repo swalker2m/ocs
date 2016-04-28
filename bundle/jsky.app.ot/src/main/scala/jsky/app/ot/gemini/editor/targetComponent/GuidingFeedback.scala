@@ -55,22 +55,33 @@ object GuidingFeedback {
   }
 
   case class BagsStatusRow(bagsStatus: BagsStatus) extends Row {
+    import BagsStatus._
     private val bgColor = bagsStatus match {
-      case BagsStatus.Pending(None) | BagsStatus.Running(None) => BANANA
-      case _                                                   => LIGHT_SALMON
+      case Idle              => HONEY_DEW
+      case Pending | Running => BANANA
+      case _                 => LIGHT_SALMON
     }
 
     private val statusIcon = Resources.getIcon("spinner16-transparent.png")
+
+    val msg = bagsStatus match {
+      case Pending     => "Pending"
+      case Idle        => "Idle"
+      case Running     => "Running"
+      case Failed(why) => s"Failed: $why"
+      case Error       => "Error"
+    }
 
     object feedbackLabel extends Label {
       border              = labelBorder
       foreground          = DARK_GRAY
       background          = bgColor
-      text                = bagsStatus.message
+      text                = msg
       icon                = statusIcon
       opaque              = true
       horizontalAlignment = Alignment.Left
     }
+
 
     layout(feedbackLabel) = new Constraints {
       weightx = 1.0
@@ -109,14 +120,14 @@ object GuidingFeedback {
 
     override def opaque_=(o: Boolean): Unit =
       if (o != opaque) {
-        super.opaque = o
+        super.opaque_=(o)
         feedbackLabel.opaque = o
         rangeLabel.opaque    = o
       }
 
     override def enabled_=(e: Boolean): Unit =
       if (e != enabled) {
-        super.enabled = enabled
+        super.enabled_=(enabled)
         feedbackLabel.icon = GuidingIcon(analysis.quality, enabled = false)
       }
 

@@ -8,7 +8,7 @@ import edu.gemini.spModel.obs.context.ObsContext
 import edu.gemini.spModel.rich.shared.immutable._
 import edu.gemini.spModel.target.SPTarget
 import jsky.app.ot.OT
-import jsky.app.ot.ags.BagsManager
+import jsky.app.ot.ags.{BagsStatus, BagsManager}
 import jsky.app.ot.gemini.editor.targetComponent.GuidingFeedback.BagsStatusRow
 
 import scala.swing.Swing
@@ -26,7 +26,7 @@ class GuidingFeedbackEditor extends TelescopePosEditor {
       val bagsRow = for {
         n <- Option(node)
         o <- Option(n.getContextObservation)
-        s <- BagsManager.instance.bagsStatus(o.getNodeKey)
+        s <- BagsManager.bagsStatus(o).filterNot(_ == BagsStatus.Idle)
       } yield BagsStatusRow(s)
 
       // If the BAGS row is defined, then use it. If not, create the rows corresponding to the analysis.
