@@ -11,7 +11,6 @@ import java.util.logging.Logger
 import edu.gemini.ags.api.{AgsHash, AgsRegistrar, AgsStrategy}
 import edu.gemini.catalog.votable.{CatalogException, GenericError}
 import edu.gemini.pot.sp._
-import edu.gemini.spModel.core.SPProgramID
 import edu.gemini.spModel.guide.GuideProbe
 import edu.gemini.spModel.obs.{ObsClassService, ObservationStatus, SPObservation}
 import edu.gemini.spModel.obs.context.ObsContext
@@ -227,6 +226,29 @@ object BagsState {
   }
 }
 
+// Wraps SPNodeKey in a new type to help avoid confusion with obsevation SPNodeKey.
+final case class ProgKey(k: SPNodeKey)
+object ProgKey {
+  def apply(o: ISPObservation): ProgKey =
+    ProgKey(o.getProgramKey)
+
+  def apply(p: ISPProgram): ProgKey =
+    ProgKey(p.getProgramKey)
+
+  implicit val OrderProgKey: Order[ProgKey] =
+    Order.order((k0,k1) => Ordering.fromInt(k0.k.compareTo(k1.k)))
+}
+
+// Wraps SPNodeKey in a new type to help avoid confusion with program SPNodeKey.
+final case class ObsKey(k: SPNodeKey)
+object ObsKey {
+  def apply(o: ISPObservation): ObsKey =
+    ObsKey(o.getNodeKey)
+
+  implicit val OrderObsKey: Order[ObsKey] =
+    Order.order((k0,k1) => Ordering.fromInt(k0.k.compareTo(k1.k)))
+}
+
 
 object BagsManager {
   private val Log = Logger.getLogger(getClass.getName)
@@ -243,35 +265,25 @@ object BagsManager {
   })
   private implicit val executionContext = ExecutionContext.fromExecutor(worker)
 
-  private implicit val OrderSPProgramID: Order[SPProgramID] =
-    Order.order((p0, p1) => Ordering.fromInt(p0.compareTo(p1)))
-
-  private implicit val OrderSPNodeKey: Order[SPNodeKey] =
-    Order.order((k0, k1) => Ordering.fromInt(k0.compareTo(k1)))
-
   // This is our mutable state.  It is only read/written by the Swing thread.
-  // TODO: Should be SPNodeKey ==>> SPNodeKey ==>> BagsState since not all
-  // TODO: programs have an SPProgramID.  We might want to make a value class
-  // TODO: to wrap SPNodeKey and give a new type for programs and observations
-  private var stateMap  = ==>>.empty[SPProgramID, SPNodeKey ==>> BagsState]
+  private var stateMap  = ==>>.empty[ProgKey, ObsKey ==>> BagsState]
   private var listeners = Set.empty[BagsStatusListener]
 
   // Handle a state machine transition.  Note we switch to the Swing thread
   // here so that the calling thread terminates.  All updates are done from
   // the Swing thread.
   private def transition(obs: ISPObservation, update: BagsState => StateTransition): Unit = Swing.onEDT {
-    val key = obs.getNodeKey
+    val progKey = ProgKey(obs)
+    val obsKey  = ObsKey(obs)
 
     val stateTuple = for {
-      pid    <- Option(obs.getProgramID)
-      obsMap <- stateMap.lookup(pid)
-      state  <- obsMap.lookup(key)
-    } yield (pid, obsMap, state)
+      obsMap <- stateMap.lookup(progKey)
+      state  <- obsMap.lookup(obsKey)
+    } yield (obsMap, state)
 
-    stateTuple.foreach { case (pid, obsMap, state) =>
+    stateTuple.foreach { case (obsMap, state) =>
       val (newState, sideEffect) = update(state)
-      val newObsMap              = obsMap.insert(key, newState)
-      val newStatemap            = stateMap.insert(pid, newObsMap)
+      val newStatemap            = stateMap.insert(progKey, obsMap.insert(obsKey, newState))
 
       val oldStatus = state.status
       val newStatus = newState.status
@@ -279,7 +291,7 @@ object BagsManager {
       val action = for {
         _ <- IO { stateMap = newStatemap }
         _ <- sideEffect
-        _ <- (oldStatus == newStatus) ? ioUnit | IO { notify(key, oldStatus, newStatus) }
+        _ <- (oldStatus == newStatus) ? ioUnit | IO { notify(obsKey.k, oldStatus, newStatus) }
       } yield ()
 
       action.unsafePerformIO()
@@ -301,17 +313,9 @@ object BagsManager {
   /** BagsStatus lookup for the UI. */
   def bagsStatus(o: ISPObservation): Option[BagsStatus] =
     for {
-      pid <- Option(o.getProgram).map(_.getProgramID)
-      s   <- bagsStatus(pid, o.getNodeKey)
-    } yield s
-
-  /** BagsStatus lookup for the UI. */
-  def bagsStatus(pid: SPProgramID, key: SPNodeKey): Option[BagsStatus] = {
-    for {
-      m <- stateMap.lookup(pid)
-      s <- m.lookup(key)
+      m <- stateMap.lookup(ProgKey(o))
+      s <- m.lookup(ObsKey(o))
     } yield s.status
-  }
 
   /** Add a program to our watch list and attach listeners. Enqueue all
     * observations for consideration for a BAGS lookup.
@@ -328,11 +332,9 @@ object BagsManager {
 
     // Place all observations in the IdleState and record them in our stateMap.
     val obsList = prog.getAllObservations.asScala.toList
-    val obsMap  = ==>>.fromList(obsList.map(o => o.getNodeKey -> (IdleState(o, None): BagsState)))
+    val obsMap  = ==>>.fromList(obsList.map(o => ObsKey(o) -> (IdleState(o, None): BagsState)))
 
-    Option(prog.getProgramID).foreach { pid =>
-      stateMap = stateMap + (pid -> obsMap)
-    }
+    stateMap = stateMap + (ProgKey(prog) -> obsMap)
 
     // Now mark all the obsevations "edited" in order to kick off AGS searches
     // and hash calculations.
@@ -343,22 +345,18 @@ object BagsManager {
     */
   def unwatch(prog: ISPProgram): Unit = {
     prog.removeCompositeChangeListener(CompositePropertyChangeListener)
-
-    Option(prog.getProgramID).foreach { pid =>
-      stateMap = stateMap - pid
-    }
+    stateMap = stateMap - ProgKey(prog)
   }
 
-  private def enqueue(o: ISPObservation): Unit =
-    Option(o.getProgramID).foreach { pid =>
-      val obsMap  = stateMap.lookup(pid).getOrElse(==>>.empty[SPNodeKey, BagsState])
-      val obsMap2 = obsMap.alter(o.getNodeKey, {
-        case None => Some(IdleState(o, None))
-        case x    => x
-      })
-      stateMap = stateMap + (pid -> obsMap2)
-      BagsManager.edited(o)
-    }
+  private def enqueue(o: ISPObservation): Unit = {
+    val obsMap  = stateMap.lookup(ProgKey(o)).getOrElse(==>>.empty[ObsKey, BagsState])
+    val obsMap2 = obsMap.alter(ObsKey(o), {
+      case None => Some(IdleState(o, None))
+      case x    => x
+    })
+    stateMap = stateMap + (ProgKey(o) -> obsMap2)
+    BagsManager.edited(o)
+  }
 
   object CompositePropertyChangeListener extends PropertyChangeListener {
     override def propertyChange(evt: PropertyChangeEvent): Unit =
