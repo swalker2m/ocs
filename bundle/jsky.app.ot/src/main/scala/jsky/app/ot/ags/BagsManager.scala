@@ -33,39 +33,53 @@ import Scalaz._
 import scalaz.effect.IO
 import scalaz.effect.IO.ioUnit
 
+/** The state of AGS lookup for a single observation. */
 sealed trait BagsState {
+  /** Gets the corresponding status for the UI.*/
   def status: BagsStatus
 
+  /** Called when an observation is edited to determine what should be the new
+    * state.  This is typically called in response to a listener on the
+    * science program.
+    */
   def edit: StateTransition =
     ErrorTransition
 
+  /** Called when a timer goes off to evaluate what should be done next and
+    * possibly move to a new state.  Timer events transition out of pending
+    * into running or out of failed into pending.  When an AGS lookup fails,
+    * a few seconds are added before transitioning in order to provide an
+    * opportunity for network issues, etc. to sort themselves out.
+    */
   def wakeUp: StateTransition =
     (this, ioUnit)
 
+  /** Called with the successful results of an AGS lookup. */
   def succeed(results: Option[AgsStrategy.Selection]): StateTransition =
     ErrorTransition
 
+  /** Called to notify that an AGS lookup failed. */
   def fail(why: String, delayMs: Long): StateTransition =
     ErrorTransition
 }
 
+
 object BagsState {
   type AgsHashVal      = Long
-  type StateTransition = (BagsState, IO[Unit])
-  val ErrorTransition  = (ErrorState, ioUnit)
+  type StateTransition = (BagsState, IO[Unit]) // Next BagsState, side-effects
+  val ErrorTransition  = (ErrorState, ioUnit)  // Default transition for unexpected events
 
-  private def hashObs(obs: ISPObservation, ctx: ObsContext): AgsHashVal = {
-    val when = obs.getDataObject.asInstanceOf[SPObservation].getSchedulingBlock.asScalaOpt.map(_.start) | Instant.now.toEpochMilli
-    AgsHash.hash(ctx, when)
-  }
-
-
-  /** Error */
+  /** Error.  This state represents a logic error.  There are no transitions out
+    * of the error state.
+    */
   case object ErrorState extends BagsState {
     override val status: BagsStatus = BagsStatus.Error
   }
 
-  /** Idle */
+  /** Idle.  When idle, there are no pending or running AGS lookups.  This is
+    * where we hang out waiting for something to be edited in order to kick off
+    * another AGS search.
+    */
   case class IdleState(obs: ISPObservation, hash: Option[AgsHashVal]) extends BagsState {
     override val status: BagsStatus = BagsStatus.Idle
 
@@ -73,7 +87,11 @@ object BagsState {
       (PendingState(obs, hash), BagsManager.wakeUpAction(obs, 0))
   }
 
-  /** Pending */
+  /** Pending.  When pending, we assume we've been edited and that a new AGS
+    * search may be required.  This is a transient state since we're expecting
+    * the timer to go off, wake us up and then we'll decide whether to do an
+    * AGS lookup, update the AGS hash code, etc.
+    */
   case class PendingState(obs: ISPObservation, hash: Option[AgsHashVal]) extends BagsState {
     override val status: BagsStatus = BagsStatus.Pending
 
@@ -84,46 +102,77 @@ object BagsState {
       def notObserved: Boolean =
         ObservationStatus.computeFor(obs) != ObservationStatus.OBSERVED
 
+      // Get the ObsContext and AgsStrategy, if possible.  If not possible,
+      // we won't be able to do AGS for this observation.
       val tup = for {
         c <- ObsContext.create(obs).asScalaOpt
-        s <- BagsManager.agsStrategy(obs, c)
+        s <- agsStrategy(obs, c)
       } yield (c, s)
 
+      // Compute the new hash value of the observation, if possible.  It may
+      // be possible to (re)run AGS but not necessary if the hash hasn't
+      // changed.
       val newHash = tup.map { case (ctx, _) => hashObs(obs, ctx) }
 
+      // Here we figure out what the transition to the RunningState should be,
+      // assuming we aren't already observed and that the hash differs.
       val runningTransition = for {
         (c, s) <- tup
         h      <- newHash
         if !hash.contains(h) && notObserved
       } yield (RunningState(obs, h), BagsManager.triggerAgsAction(obs)): StateTransition
 
+      // Returns the new state to switch to, either RunningState if all is well
+      // and a new AGS lookup is needed or else IdleState (possibly with an
+      // updated hash value) otherwise.
       def idleAction = tup.fold(BagsManager.clearAction(obs)) { _ => ioUnit }
-
       runningTransition | ((IdleState(obs, newHash), idleAction))
     }
   }
 
-  /** Running */
+  /** Running.  The running state means we're doing an AGS lookup and haven't
+    * received the results yet.  We also know that there have been no edits
+    * since the search began since we will transition to RunningEditedState
+    * if something is edited in the meantime.
+    */
   case class RunningState(obs: ISPObservation, hash: AgsHashVal) extends BagsState {
     override val status: BagsStatus = BagsStatus.Running
 
+    // When edited while running, we continue running but remember we were
+    // edited by moving to RunningEditedState.  When the results eventually
+    // come back from the AGS lookup when in RunningEditedState, we store them
+    // but move to PendingState to run again.
     override val edit: StateTransition =
       (RunningEditedState(obs, hash), ioUnit)
 
+    // Successful AGS lookup while running (and not edited).  Apply the update
+    // and move to IdleState.
     override def succeed(results: Option[AgsStrategy.Selection]): StateTransition =
       (IdleState(obs, Some(hash)), BagsManager.applyAction(obs, results))
 
+    // Failed AGS lookup.  Move to FailedState for a while and ask the timer to
+    // wake us up in a bit.  When the timer eventually goes off we will switch
+    // to PendingState (see FailedState.wakeUp).
     override def fail(why: String, delayMs: Long): StateTransition =
       (FailureState(obs, why), BagsManager.wakeUpAction(obs, delayMs))
   }
 
-  /** RunningEdited */
+  /** RunningEdited. This state corresponds to a running AGS search for an
+    * observation that was subsequently edited.  Since it has been edited, the
+    * resuls we're expecting may no longer be valid when they arrive.
+    */
   case class RunningEditedState(obs: ISPObservation, hash: AgsHashVal) extends BagsState {
     override val status: BagsStatus = BagsStatus.Running
 
+    // If we're edited again while running, just loop back.  Once the results of
+    // the previous edit that got us into RunningState in the first place
+    // finish, we'll switch to Pending and go again.
     override val edit: StateTransition =
       (this, ioUnit)
 
+    // Success, but now the observation has been edited so the AGS selection
+    // may not be valid.  Apply the results anyway in case the edit is not
+    // to a field that impacts AGS and go to pending to run again if necessary.
     override def succeed(results: Option[AgsStrategy.Selection]): StateTransition = {
       val action = for {
         _ <- BagsManager.applyAction(obs, results)
@@ -132,19 +181,49 @@ object BagsState {
       (PendingState(obs, Some(hash)), action)
     }
 
+    // Failed AGS but we've been edited in the meantime anyway.  Go back to
+    // PendingState so we can run again.  Here we pass in no AgsHash value to
+    // ensure that pending will count this as an AGS-worthy edit.
     override def fail(why: String, delayMs: Long): StateTransition =
       (PendingState(obs, None), BagsManager.wakeUpAction(obs, delayMs))
   }
 
-  /** Failure */
+  /** Failure. This state is used to mark an AGS lookup failure.  It is a
+    * transient state since a timer is expected to eventually go off and move
+    * us back to pending to retry the search.
+    */
   case class FailureState(obs: ISPObservation, why: String) extends BagsState {
     override def status: BagsStatus = BagsStatus.Failed(why)
 
+    // If edited while in failed, we just loop back.  When the timer eventually
+    // goes off we'll move to pending and redo the AGS lookup anyway.
     override val edit: StateTransition =
       (this, ioUnit)
 
+    // When the timer goes off we can go back to pending (with no AgsHash value
+    // since we want to ensure that the AGS search runs again).
     override val wakeUp: StateTransition =
       (PendingState(obs, None), BagsManager.wakeUpAction(obs, 0))
+  }
+
+
+  private def hashObs(obs: ISPObservation, ctx: ObsContext): AgsHashVal = {
+    val when = obs.getDataObject.asInstanceOf[SPObservation].getSchedulingBlock.asScalaOpt.map(_.start) | Instant.now.toEpochMilli
+    AgsHash.hash(ctx, when)
+  }
+
+  // Performs checks to rule out disabled guide groups, instruments without
+  // guiding strategies (e.g. GPI), observation classes that do not have
+  // guiding (e.g. daytime calibration).
+  private def agsStrategy(obs: ISPObservation, ctx: ObsContext): Option[AgsStrategy] = {
+    val groupEnabled = ctx.getTargets.getGuideEnvironment.guideEnv.auto match {
+      case AutomaticGroup.Initial | AutomaticGroup.Active(_, _) => true
+      case _                                                    => false
+    }
+
+    AgsRegistrar.currentStrategy(ctx).filter { _ =>
+      groupEnabled && (ObsClassService.lookupObsClass(obs) != ObsClass.DAY_CAL)
+    }
   }
 }
 
@@ -152,6 +231,7 @@ object BagsState {
 object BagsManager {
   private val Log = Logger.getLogger(getClass.getName)
 
+  // Worker pool running the AGS search and the timer.
   val NumWorkers = math.max(1, Runtime.getRuntime.availableProcessors - 1)
   private val worker = new ScheduledThreadPoolExecutor(NumWorkers, new ThreadFactory() {
     override def newThread(r: Runnable): Thread = {
@@ -161,7 +241,6 @@ object BagsManager {
       t
     }
   })
-
   private implicit val executionContext = ExecutionContext.fromExecutor(worker)
 
   private implicit val OrderSPProgramID: Order[SPProgramID] =
@@ -170,8 +249,16 @@ object BagsManager {
   private implicit val OrderSPNodeKey: Order[SPNodeKey] =
     Order.order((k0, k1) => Ordering.fromInt(k0.compareTo(k1)))
 
-  private var stateMap = ==>>.empty[SPProgramID, SPNodeKey ==>> BagsState]
+  // This is our mutable state.  It is only read/written by the Swing thread.
+  // TODO: Should be SPNodeKey ==>> SPNodeKey ==>> BagsState since not all
+  // TODO: programs have an SPProgramID.  We might want to make a value class
+  // TODO: to wrap SPNodeKey and give a new type for programs and observations
+  private var stateMap  = ==>>.empty[SPProgramID, SPNodeKey ==>> BagsState]
+  private var listeners = Set.empty[BagsStatusListener]
 
+  // Handle a state machine transition.  Note we switch to the Swing thread
+  // here so that the calling thread terminates.  All updates are done from
+  // the Swing thread.
   private def transition(obs: ISPObservation, update: BagsState => StateTransition): Unit = Swing.onEDT {
     val key = obs.getNodeKey
 
@@ -211,12 +298,14 @@ object BagsManager {
   private def fail(obs: ISPObservation, why: String, delay: Long): Unit =
     transition(obs, _.fail(why, delay))
 
+  /** BagsStatus lookup for the UI. */
   def bagsStatus(o: ISPObservation): Option[BagsStatus] =
     for {
       pid <- Option(o.getProgram).map(_.getProgramID)
       s   <- bagsStatus(pid, o.getNodeKey)
     } yield s
 
+  /** BagsStatus lookup for the UI. */
   def bagsStatus(pid: SPProgramID, key: SPNodeKey): Option[BagsStatus] = {
     for {
       m <- stateMap.lookup(pid)
@@ -224,13 +313,20 @@ object BagsManager {
     } yield s.status
   }
 
-  /**
-    * Atomically add a program to our watch list and attach listeners.
-    * Enqueue all observations for consideration for a BAGS lookup.
+  /** Add a program to our watch list and attach listeners. Enqueue all
+    * observations for consideration for a BAGS lookup.
     */
   def watch(prog: ISPProgram): Unit = {
+    // TODO: Here we should probably check that the program isn't being
+    // TODO: managed already.  If it is, we should do nothing!
+
+    // TODO: I removed structure change listener since the composite change
+    // TODO: listener adds any missing observations it finds.  I'm not sure
+    // TODO: that is sufficient though.
+
     prog.addCompositeChangeListener(CompositePropertyChangeListener)
 
+    // Place all observations in the IdleState and record them in our stateMap.
     val obsList = prog.getAllObservations.asScala.toList
     val obsMap  = ==>>.fromList(obsList.map(o => o.getNodeKey -> (IdleState(o, None): BagsState)))
 
@@ -238,12 +334,12 @@ object BagsManager {
       stateMap = stateMap + (pid -> obsMap)
     }
 
+    // Now mark all the obsevations "edited" in order to kick off AGS searches
+    // and hash calculations.
     obsList.foreach(edited)
   }
 
-  /**
-    * Atomically remove a program from our watch list and remove listeners. Any queued observations
-    * will be discarded as they come up for consideration.
+  /** Remove a program from our watch list and remove listeners.
     */
   def unwatch(prog: ISPProgram): Unit = {
     prog.removeCompositeChangeListener(CompositePropertyChangeListener)
@@ -253,7 +349,7 @@ object BagsManager {
     }
   }
 
-  private def enqueue(o: ISPObservation): Unit =  {
+  private def enqueue(o: ISPObservation): Unit =
     Option(o.getProgramID).foreach { pid =>
       val obsMap  = stateMap.lookup(pid).getOrElse(==>>.empty[SPNodeKey, BagsState])
       val obsMap2 = obsMap.alter(o.getNodeKey, {
@@ -261,9 +357,8 @@ object BagsManager {
         case x    => x
       })
       stateMap = stateMap + (pid -> obsMap2)
+      BagsManager.edited(o)
     }
-    BagsManager.edited(o)
-  }
 
   object CompositePropertyChangeListener extends PropertyChangeListener {
     override def propertyChange(evt: PropertyChangeEvent): Unit =
@@ -273,8 +368,6 @@ object BagsManager {
       }
   }
 
-  /** Listeners for BAGS status changes. **/
-  private var listeners: Set[BagsStatusListener] = Set.empty[BagsStatusListener]
 
   def addBagsStatusListener(l: BagsStatusListener): Unit = {
     listeners = listeners + l
@@ -292,18 +385,9 @@ object BagsManager {
     listeners.foreach(l => Try { l.bagsStatusChange(key, oldStatus, newStatus) })
 
 
-  // Performs checks to rule out disabled guide groups, instruments without guiding strategies (e.g. GPI),
-  // observation classes that do not have guiding (e.g. daytime calibration).
-  def agsStrategy(obs: ISPObservation, ctx: ObsContext): Option[AgsStrategy] = {
-    val grouEnabledp = ctx.getTargets.getGuideEnvironment.guideEnv.auto match {
-      case AutomaticGroup.Initial | AutomaticGroup.Active(_, _) => true
-      case _                                                    => false
-    }
-
-    AgsRegistrar.currentStrategy(ctx).filter { _ =>
-      grouEnabledp && (ObsClassService.lookupObsClass(obs) != ObsClass.DAY_CAL)
-    }
-  }
+  // -------------------------------------------------------------------------
+  // Side effects that accompany the state transitions.
+  // -------------------------------------------------------------------------
 
   private[ags] def wakeUpAction(obs: ISPObservation, delayMs: Long): IO[Unit] = IO {
     worker.schedule(new Runnable() {
@@ -323,19 +407,19 @@ object BagsManager {
     fut.fold(BagsManager.fail(obs, "Cannot perform AGS on this observation", 0)) { f =>
       f.onComplete {
         case Success(opt) =>
+          // TODO: Sleep just to show that it is working.  Otherwise the
+          // TODO: transition from Pending through Running to Idle is immediate
+          // TODO: in most cases.  Remove once satisfied that all is well.
           Thread.sleep(2000)
           BagsManager.success(obs, opt)
 
         case Failure(CatalogException((e: GenericError) :: _)) =>
-          Thread.sleep(2000)
           BagsManager.fail(obs, "Catalog lookup failed.", 5000)
 
         case Failure(ex: TimeoutException) =>
-          Thread.sleep(2000)
           BagsManager.fail(obs, "Catalog timed out.", 0)
 
         case Failure(ex) =>
-          Thread.sleep(2000)
           BagsManager.fail(obs, s"Unexpected error ${Option(ex.getMessage).getOrElse("")}", 5000)
       }
     }
@@ -379,6 +463,8 @@ object BagsManager {
       }
     }
 
+    // TODO: if we add back a structure change listener, i suppose it needs
+    // TODO: to be included here to
     obs.getProgram.removeCompositeChangeListener(CompositePropertyChangeListener)
     applySelection(TpeContext(obs))
 
