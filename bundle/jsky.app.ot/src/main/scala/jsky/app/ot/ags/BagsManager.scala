@@ -7,7 +7,6 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent._
 import java.util.logging.{Level, Logger}
 
-import edu.gemini.ags.api.AgsStrategy.Assignment
 import edu.gemini.ags.api.{AgsHash, AgsRegistrar, AgsStrategy}
 import edu.gemini.catalog.votable.{CatalogException, GenericError}
 import edu.gemini.pot.sp._
@@ -115,13 +114,17 @@ final class BagsManager(executorService: ExecutorService) {
 
     }
 
-    def hasBeenUpdated(o: ISPObservation, ctx: ObsContext): Boolean = {
+    def updateHash(o: ISPObservation, ctx: ObsContext): Boolean = synchronized {
       val key     = o.getNodeKey
       val when    = o.getDataObject.asInstanceOf[SPObservation].getSchedulingBlock.asScalaOpt.map(_.start) | Instant.now.toEpochMilli
       val newHash = AgsHash.hash(ctx, when)
       val curHash = Option(hashes.get(key))
       hashes.put(key, newHash)
       !curHash.contains(newHash)
+    }
+
+    def clearHash(o: ISPObservation): Unit = synchronized {
+      hashes.remove(o.getNodeKey)
     }
 
     def notObserved(o: ISPObservation): Boolean =
@@ -148,10 +151,13 @@ final class BagsManager(executorService: ExecutorService) {
           if (dequeue(key, obs.getProgramID)) {
             // Otherwise construct an obs context, verify that it's bags-worthy, and go.
             ObsContext.create(obs).asScalaOpt.foreach { ctx =>
-              val eligibleForBags = isEligibleForBags(ctx)
-              if (eligibleForBags
-                && hasBeenUpdated(obs, ctx)
-                && notObserved(obs)) {
+
+              if (!isEligibleForBags(ctx)) {
+                LOG.info(s"${obs.getObservationID} not eligible for BAGS. Clearing auto group.")
+                applySwingResults(None)
+                clearHash(obs)
+
+              } else if (updateHash(obs, ctx) && notObserved(obs)) {
                 //   do the lookup
                 //   on success {
                 //      if we're in the queue again, it means something changed while this task was
@@ -190,9 +196,6 @@ final class BagsManager(executorService: ExecutorService) {
                       enqueue(obs, 5000L)
                   }
                 }
-              } else if (!eligibleForBags) {
-                LOG.info(s"${obs.getObservationID} not eligible for BAGS. Clearing auto group.")
-                applySwingResults(None)
               }
             }
           }
@@ -271,7 +274,7 @@ object BagsManager {
 
       // Change the pos angle as appropriate if this is the auto group.
       selOpt.foreach { sel =>
-        if (newEnv.getPrimaryGuideGroup().isAutomatic && selOpt.isDefined) {
+        if (newEnv.getPrimaryGuideGroup.isAutomatic && selOpt.isDefined) {
           ctx.instrument.dataObject.foreach { inst =>
             val deg = sel.posAngle.toDegrees
             val old = inst.getPosAngleDegrees
