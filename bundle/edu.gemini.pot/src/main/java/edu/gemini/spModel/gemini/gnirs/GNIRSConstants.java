@@ -15,6 +15,7 @@ public final class GNIRSConstants extends InstConstants {
     public static final String BIAS_LEVEL_PROP = "biasLevel";
     public static final String CROSS_DISPERSED_PROP = "crossDispersed";
     public static final String READ_MODE_PROP = "readMode";
+    public static final ItemKey READ_MODE_KEY = key(READ_MODE_PROP);
     public static final String DIGITAL_AVERAGES_PROP = "digitalAverages";
     public static final String DISPERSER_PROP = "disperser";
     public static final String LOW_NOISE_READS_PROP = "lowNoiseReads";
