@@ -7,6 +7,7 @@ import edu.gemini.spModel.data.config.DefaultSysConfig;
 import edu.gemini.spModel.data.config.IConfig;
 import edu.gemini.spModel.data.config.ISysConfig;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.calibration.CalDictionary.Item;
 import edu.gemini.spModel.obscomp.InstConstants;
 
@@ -93,4 +94,14 @@ public final class CalConfigBuilderUtil {
         return InstConstants.FLAT_OBSERVE_TYPE.equals(obsType) ||
                InstConstants.ARC_OBSERVE_TYPE.equals(obsType);
     }
+
+    /**
+     * Returns <code>true</code> if this is a smart/automatic calibration step,
+     * <code>false</code> if manual calibration or not a calibration at all.
+     */
+    public static boolean isAutomaticCalStep(Config c) {
+        final Object calType = c.getItemValue(CalDictionary.CAL_TYPE_ITEM.key);
+        return (CalType.automatic == calType) && isCalStep(c);
+    }
+
 }

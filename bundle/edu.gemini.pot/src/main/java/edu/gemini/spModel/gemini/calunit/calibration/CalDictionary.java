@@ -2,6 +2,8 @@ package edu.gemini.spModel.gemini.calunit.calibration;
 
 import edu.gemini.shared.util.immutable.ImOption;
 import edu.gemini.spModel.config2.ItemKey;
+import edu.gemini.spModel.gemini.calunit.CalType;
+import edu.gemini.spModel.gemini.calunit.CalUnitConstants;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Diffuser;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Filter;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Lamp;
@@ -184,6 +186,16 @@ public final class CalDictionary {
       PropertyKind.derived
     );
 
+    // Whether the calibration step is smart/automatic or dumb/manual.
+    public static final Item CAL_TYPE_ITEM = new Item(
+      new ItemKey(CAL_KEY, CalUnitConstants.TYPE_PROP),
+      SHOW_ENUM_NAME,
+      CalType::valueOf,
+      IndexedCalibrationStep::getType,
+      PropertyKind.fundamental,
+      DataAspect.meta
+    );
+
     public static final Collection<Item> ITEMS = Arrays.asList(
       LAMP_ITEM,
       SHUTTER_ITEM,
@@ -198,7 +210,8 @@ public final class CalDictionary {
       OBS_TYPE_ITEM,
       OBS_EXPOSURE_TIME_ITEM,
       OBS_COADDS_ITEM,
-      OBS_OBJECT_ITEM
+      OBS_OBJECT_ITEM,
+      CAL_TYPE_ITEM
     );
 
     /** ItemKeys for all systems that are used to configure a calibration. */

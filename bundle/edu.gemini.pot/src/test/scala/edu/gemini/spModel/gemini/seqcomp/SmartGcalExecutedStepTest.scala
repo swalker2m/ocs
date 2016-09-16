@@ -1,5 +1,6 @@
 package edu.gemini.spModel.gemini.seqcomp
 
+import edu.gemini.spModel.gemini.calunit.CalType
 import edu.gemini.spModel.test.SpModelTestBase
 import edu.gemini.spModel.gemini.gnirs.InstGNIRS
 import org.junit.{Test, Before}
@@ -137,6 +138,8 @@ case class CalImpl(
   def getObserve = observe
   def getExposureTime = exposureTime
   def getCoadds = coadds
+
+  def getType = CalType.automatic;
 }
 
 class TestCalibrationProvider(cals: List[Calibration]) extends CalibrationProvider {

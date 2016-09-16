@@ -863,10 +863,6 @@ public class InstGNIRS extends ParallacticAngleSupportInst implements PropertyPr
 
     private static final ItemKey CAL_EXP_TIME_KEY = new ItemKey("calibration:exposureTime");
 
-    private static boolean isCalStep(Config c) {
-        return CalConfigBuilderUtil.isCalStep(c);
-    }
-
     private static Double calExposureTime(Config c) {
         // The value should be a Double here after a change in 2012B in which
         // value mapping is done only after all other sequence manipulation is
@@ -880,11 +876,11 @@ public class InstGNIRS extends ParallacticAngleSupportInst implements PropertyPr
     }
 
     @Override public ConfigSequence postProcessSequence(ConfigSequence in) {
-        Config[] configs = in.getAllSteps();
+        final Config[] configs = in.getAllSteps();
 
         for (Config c : configs) {
-            if (isCalStep(c)) {
-                Double expTime = calExposureTime(c);
+            if (CalConfigBuilderUtil.isAutomaticCalStep(c)) {
+                final Double expTime = calExposureTime(c);
                 if (expTime != null) {
                     c.putItem(ReadMode.KEY, selectCalReadMode(expTime));
                 }

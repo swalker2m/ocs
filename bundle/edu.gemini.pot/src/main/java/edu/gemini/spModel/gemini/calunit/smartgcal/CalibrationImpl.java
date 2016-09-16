@@ -6,6 +6,7 @@
 
 package edu.gemini.spModel.gemini.calunit.smartgcal;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams;
 import edu.gemini.spModel.type.SpTypeUtil;
 
@@ -276,6 +277,9 @@ public final class CalibrationImpl implements Calibration {
     public Boolean isBasecalDay() {
         return basecals.contains(Basecal.DAY);
     }
+
+    @Override
+    public CalType getType() { return CalType.automatic; }
 
     @Override
     public int hashCode() {

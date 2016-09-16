@@ -7,6 +7,7 @@
 
 package edu.gemini.spModel.gemini.calunit.calibration;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams;
 
 import java.io.Serializable;
@@ -36,4 +37,6 @@ public interface CalibrationStep extends Serializable {
     Double getExposureTime();
 
     Integer getCoadds();
+
+    CalType getType();
 }

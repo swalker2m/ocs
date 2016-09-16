@@ -1,5 +1,6 @@
 package edu.gemini.spModel.gemini.calunit.calibration;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams;
 
 import java.util.Set;
@@ -32,6 +33,8 @@ public final class DelegatingIndexedCalibrationStep implements IndexedCalibratio
     @Override public Double getExposureTime() { return delegate.getExposureTime(); }
 
     @Override public Integer getCoadds() { return delegate.getCoadds(); }
+
+    @Override public CalType getType() { return delegate.getType(); }
 
     @Override public Boolean isBasecalDay() { return delegate.isBasecalDay(); }
 

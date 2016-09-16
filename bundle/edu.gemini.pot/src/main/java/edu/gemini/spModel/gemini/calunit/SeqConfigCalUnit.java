@@ -66,9 +66,6 @@ public class SeqConfigCalUnit extends SeqConfigObsBase { // implements PropertyP
         // Parent has no iterable items
         DefaultSysConfig sc = new DefaultSysConfig(getType().narrowType);
 
-        // Dumb or smart calibration?
-        sc.putParameter(DefaultParameter.getInstance(CalUnitConstants.SMART,        Boolean.TRUE));
-
         // Add the camera
         sc.putParameter(DefaultParameter.getInstance(CalUnitConstants.LAMP_PROP,     Arrays.asList(Lamp.values())));
         sc.putParameter(DefaultParameter.getInstance(CalUnitConstants.SHUTTER_PROP,  Arrays.asList(Shutter.values())));

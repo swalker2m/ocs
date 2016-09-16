@@ -6,6 +6,7 @@
 
 package edu.gemini.spModel.smartgcal;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams;
 import edu.gemini.spModel.gemini.calunit.smartgcal.Calibration;
 import edu.gemini.spModel.gemini.calunit.smartgcal.CalibrationMap;
@@ -238,9 +239,10 @@ public class CalibrationMapReaderTest {
         }
 
         @Override
-        public Integer getCoadds() {
-            return null;
-        }
+        public Integer getCoadds() { return null; }
+
+        @Override
+        public CalType getType() { return null; }
     }
 
     public static class FakeKey implements ConfigurationKey {

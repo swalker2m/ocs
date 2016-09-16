@@ -1,5 +1,6 @@
 package edu.gemini.spModel.gemini.calunit.calibration;
 
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Diffuser;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Filter;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Lamp;
@@ -15,15 +16,16 @@ import java.util.TreeSet;
  */
 public final class MutableIndexedCalibrationStep extends AbstractIndexedCalibrationStep {
 
-    private final Set<Lamp> lamps = new TreeSet<Lamp>();
+    private final Set<Lamp> lamps = new TreeSet<>();
     private Shutter shutter;
     private Filter filter;
     private Diffuser diffuser;
     private Double exposureTime;
     private Integer coadds;
     private String obsClass;
+    private CalType calType;
 
-    @Override public Set<Lamp> getLamps() { return new TreeSet<Lamp>(lamps); }
+    @Override public Set<Lamp> getLamps() { return new TreeSet<>(lamps); }
     public void setLamps(Collection<Lamp> lamps) { this.lamps.clear(); this.lamps.addAll(lamps); }
 
     @Override public Shutter getShutter() { return shutter; }
@@ -41,8 +43,13 @@ public final class MutableIndexedCalibrationStep extends AbstractIndexedCalibrat
     @Override public Integer getCoadds() { return coadds; }
     public void setCoadds(Integer coadds) { this.coadds = coadds;}
 
+    @Override public CalType getType() { return calType; }
+    public void setType(CalType t) { this.calType = t; }
+
     @Override public String getObsClass() { return obsClass; }
     public void setObsClass(String obsClass) { this.obsClass = obsClass; }
+
+
 
     // these methods are solely here to implement the interface, they are not needed in the editor
     @Override public Boolean isBasecalDay() { return false; }

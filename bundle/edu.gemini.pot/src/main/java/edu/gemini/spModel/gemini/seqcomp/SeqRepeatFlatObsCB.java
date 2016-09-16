@@ -4,12 +4,16 @@ import edu.gemini.pot.sp.ISPSeqComponent;
 import edu.gemini.spModel.config.AbstractSeqComponentCB;
 import edu.gemini.spModel.config2.Config;
 import edu.gemini.spModel.data.config.*;
+import static edu.gemini.spModel.gemini.calunit.CalUnitConstants.TYPE_PROP;
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.calibration.CalConfigBuilderUtil;
 import edu.gemini.spModel.gemini.calunit.calibration.CalConfigFactory;
 import edu.gemini.spModel.gemini.calunit.calibration.MutableIndexedCalibrationStep;
 import edu.gemini.spModel.obscomp.InstConstants;
-import edu.gemini.spModel.seqcomp.SeqConfigNames;
+import static edu.gemini.spModel.seqcomp.SeqConfigNames.CALIBRATION_CONFIG_NAME;
+import static edu.gemini.spModel.seqcomp.SeqConfigNames.OBSERVE_CONFIG_NAME;
 import edu.gemini.spModel.seqcomp.SeqRepeatCbOptions;
+
 
 import java.util.Map;
 
@@ -78,6 +82,9 @@ public class SeqRepeatFlatObsCB extends AbstractSeqComponentCB {
         Config c = CalConfigFactory.complete(mics);
         CalConfigBuilderUtil.updateIConfig(c, config, prevFull);
 
+        // Mark this step as a manual calibration step.
+        config.putParameter(CALIBRATION_CONFIG_NAME, DefaultParameter.getInstance(TYPE_PROP, CalType.manual));
+
         if (SeqRepeatCbOptions.getAddObsCount(_options)) {
             ISysConfig obs = getObsSysConfig(config);
             obs.putParameter(
@@ -86,9 +93,9 @@ public class SeqRepeatFlatObsCB extends AbstractSeqComponentCB {
     }
 
     private ISysConfig getObsSysConfig(IConfig config) {
-        ISysConfig sys = config.getSysConfig(SeqConfigNames.OBSERVE_CONFIG_NAME);
+        ISysConfig sys = config.getSysConfig(OBSERVE_CONFIG_NAME);
         if (sys == null) {
-            sys = new DefaultSysConfig(SeqConfigNames.OBSERVE_CONFIG_NAME);
+            sys = new DefaultSysConfig(OBSERVE_CONFIG_NAME);
             config.appendSysConfig(sys);
         }
         return sys;

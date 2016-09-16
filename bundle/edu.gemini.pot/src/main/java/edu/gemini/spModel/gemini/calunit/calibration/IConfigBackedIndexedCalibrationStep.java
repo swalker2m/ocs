@@ -1,6 +1,7 @@
 package edu.gemini.spModel.gemini.calunit.calibration;
 
 import edu.gemini.spModel.data.config.IConfig;
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams;
 import edu.gemini.spModel.gemini.calunit.calibration.CalDictionary.Item;
 
@@ -80,5 +81,9 @@ public class IConfigBackedIndexedCalibrationStep extends AbstractIndexedCalibrat
 
     @Override public Integer getCoadds() {
         return (Integer) getItemValue(COADDS_ITEM);
+    }
+
+    @Override public CalType getType() {
+        return (CalType) getItemValue(CAL_TYPE_ITEM);
     }
 }

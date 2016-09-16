@@ -10,8 +10,10 @@ package edu.gemini.spModel.gemini.calunit;
  * This class defines shared constants such as default values
  * and property names to be used within the CalUnit components.
  */
-public class CalUnitConstants {
-    public static final String SMART = "smart";
+public final class CalUnitConstants {
+    private CalUnitConstants() { /* prevent instantiation */ }
+
+    public static final String TYPE_PROP = "calType";
     public static final String LAMP_PROP = "lamp";
     public static final String SHUTTER_PROP = "shutter";
     public static final String FILTER_PROP = "filter";

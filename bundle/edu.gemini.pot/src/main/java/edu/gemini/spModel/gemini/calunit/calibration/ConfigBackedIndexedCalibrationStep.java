@@ -2,6 +2,7 @@ package edu.gemini.spModel.gemini.calunit.calibration;
 
 import edu.gemini.spModel.config2.Config;
 import edu.gemini.spModel.config2.DefaultConfig;
+import edu.gemini.spModel.gemini.calunit.CalType;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Diffuser;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Filter;
 import edu.gemini.spModel.gemini.calunit.CalUnitParams.Lamp;
@@ -57,6 +58,10 @@ public final class ConfigBackedIndexedCalibrationStep extends AbstractIndexedCal
 
     @Override public Integer getCoadds() {
         return (Integer) config.getItemValue(COADDS_ITEM.key);
+    }
+
+    @Override public CalType getType() {
+        return (CalType) config.getItemValue(CAL_TYPE_ITEM.key);
     }
 
     @Override public Boolean isBasecalDay() {
