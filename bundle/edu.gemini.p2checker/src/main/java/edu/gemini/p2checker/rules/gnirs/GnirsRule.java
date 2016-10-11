@@ -5,6 +5,8 @@ import edu.gemini.p2checker.rules.altair.AltairRule;
 import edu.gemini.p2checker.util.AbstractConfigRule;
 import edu.gemini.p2checker.util.NoPOffsetWithSlitRule;
 import edu.gemini.p2checker.util.SequenceRule;
+import edu.gemini.shared.util.immutable.ImOption;
+import edu.gemini.shared.util.immutable.Option;
 import edu.gemini.spModel.config2.Config;
 import edu.gemini.spModel.gemini.gnirs.GNIRSParams;
 import edu.gemini.spModel.gemini.gnirs.GNIRSParams.*;
@@ -12,12 +14,17 @@ import edu.gemini.spModel.gemini.gnirs.InstGNIRS;
 import scala.runtime.AbstractFunction2;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class GnirsRule implements IRule {
     private static final Collection<IConfigRule> GNIRS_RULES = new ArrayList<>();
-    private static final String PREFIX = "GnirsRule_";
+    public static final String PREFIX = "GnirsRule_";
 
-    // ERROR if Camera ?= *red (or equivalent of pixel scale+wavelength) && Cross-dispersed != No, "The red cameras cannot be used in cross-dispersed mode."
+    private static final IConfigMatcher ACQUISITION_MATCHER = (config, step, elems) ->
+        SequenceRule.getInstrumentItem(config, InstGNIRS.ACQUISITION_MIRROR_PROP) == AcquisitionMirror.IN;
+
+
+                // ERROR if Camera ?= *red (or equivalent of pixel scale+wavelength) && Cross-dispersed != No, "The red cameras cannot be used in cross-dispersed mode."
     private static IConfigRule RED_CAMERA_XD_RULE = new IConfigRule() {
         private static final String MESSAGE = "The red cameras cannot be used in cross-dispersed mode.";
 
@@ -320,7 +327,7 @@ public class GnirsRule implements IRule {
         }
     };
 
-    
+
     /**
      * Rules for GNIRS + Altair.
      * See REL-386.
@@ -405,6 +412,43 @@ public class GnirsRule implements IRule {
         }
     };
 
+    public static final class AcquisitionWavelengthRule implements IConfigRule {
+
+        public static final String NAME = "ACQ_WAVELENGTH_RULE";
+        public static final String MESG = "Set the Central Wavelength to match the wavelength of the filter";
+
+        public String formatMessage(Option<Filter> of) {
+            return MESG + of.map(f -> String.format(" (%s, %.2f um).", f.displayValue(), f.wavelength())).getOrElse(".");
+        }
+
+        private <T> Option<String> formatWavelength(Option<T> ot, Function<T, Double> ex) {
+            return ot.flatMap(t -> ImOption.apply(ex.apply(t))).map(d -> String.format("%.2f", d));
+        }
+
+        private Boolean matches(Option<Filter> of, Option<Wavelength> ol) {
+            final Option<String> required = formatWavelength(of, Filter::wavelength);
+            final Option<String> actual   = formatWavelength(ol, Wavelength::doubleValue);
+            return required.forall(r -> actual.forall(a -> a.equals(r)));
+        }
+
+        @Override
+        public Problem check(Config config, int step, ObservationElements elems, Object state) {
+            final Option<Filter>     f = ImOption.apply((Filter) SequenceRule.getInstrumentItem(config, InstGNIRS.FILTER_PROP));
+            final Option<Wavelength> l = ImOption.apply((Wavelength) SequenceRule.getInstrumentItem(config, InstGNIRS.CENTRAL_WAVELENGTH_PROP));
+            return matches(f, l) ? null :
+                    new Problem(ERROR, PREFIX + NAME, formatMessage(f),
+                                SequenceRule.getInstrumentOrSequenceNode(step, elems));
+        }
+
+        @Override
+        public IConfigMatcher getMatcher() {
+            return ACQUISITION_MATCHER;
+        }
+    };
+
+    private static final IConfigRule ACQUISITION_WAVELENGTH_RULE = new AcquisitionWavelengthRule();
+
+
 
     static {
         GNIRS_RULES.add(RED_CAMERA_XD_RULE);
@@ -425,6 +469,7 @@ public class GnirsRule implements IRule {
         GNIRS_RULES.add(ALTAIR_RULE);
         GNIRS_RULES.add(NO_P_OFFSETS_WITH_SLIT_SPECTROSCOPY_RULE);
         GNIRS_RULES.add(DECKER_ACQ_MIRROR_OUT_RULE);
+        GNIRS_RULES.add(ACQUISITION_WAVELENGTH_RULE);
     }
 
     public IP2Problems check(final ObservationElements elements)  {
